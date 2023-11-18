@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "oneOf": [
+      {
+        "$comment": "constructor transformation. the constructor value is stored in the values object",
+        "required": [
+          "type",
+          "reason",
+          "offset"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "value": "insert"
+          },
+          "reason": {
+            "type": "string",
+            "value": "constructor"
+          },
+          "offset": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      {
+        "$comment": "replacing the cbor auxdata. the auxdata is stored in the values object",
+        "required": [
+          "type",
+          "reason",
+          "offset",
+          "id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "value": "replace"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "auxdata"
+            ]
+          },
+          "offset": {
+            "type": "number",
+            "minimum": 0
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      {
+        "$comment": "replacing a library or immutable. the value to replace with is stored in the values object",
+        "required": [
+          "type",
+          "reason",
+          "offset",
+          "id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "type": "string",
+            "value": "replace"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "library",
+              "immutable"
+            ]
+          },
+          "offset": {
+            "type": "number",
+            "minimum": 0
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    ]
+  }
+}
