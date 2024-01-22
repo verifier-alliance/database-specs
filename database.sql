@@ -1,6 +1,15 @@
 /* Needed for gen_random_uuid(); */
 CREATE EXTENSION pgcrypto;
 
+/* Needed to automatically set `updated_at` fields on updates */
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 /*
     The `code` table stores a mapping from code hash to bytecode. This table may store
     both normalized and unnormalized code.
@@ -81,13 +90,13 @@ CREATE TABLE contract_deployments
 
     /*
         geth full nodes have the ability to prune the transaction index, so if the transaction_hash
-        can't be found directly, use the block_number and txindex. make sure to compare the transaction_hash to
+        can't be found directly, use the block_number and transaction_index. make sure to compare the transaction_hash to
         make sure it matches!
 
         for genesis contracts, both values should be set to -1
     */
-    block_number    numeric NOT NULL,
-    txindex         numeric NOT NULL,
+    block_number        numeric NOT NULL,
+    transaction_index   numeric NOT NULL,
     
     /*
         this is the address which actually deployed the contract (i.e. called the create/create2 opcode)
@@ -178,6 +187,11 @@ CREATE TABLE compiled_contracts
 CREATE INDEX compiled_contracts_creation_code_hash ON compiled_contracts USING btree (creation_code_hash);
 CREATE INDEX compiled_contracts_runtime_code_hash ON compiled_contracts USING btree (runtime_code_hash);
 
+CREATE TRIGGER trigger_set_updated_at
+BEFORE INSERT ON compiled_contracts
+    FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
 /*
     The verified_contracts table links an on-chain contract with a compiled_contract
     Note that only one of creation or runtime bytecode must match, because:
@@ -187,7 +201,7 @@ CREATE INDEX compiled_contracts_runtime_code_hash ON compiled_contracts USING bt
 CREATE TABLE verified_contracts
 (
     /* an opaque id, but sequentially ordered */
-    id  BIGSERIAL NOT NULL,
+    id  BIGSERIAL NOT NULL PRIMARY KEY,
     
     /* timestamps */
     created_at  timestamptz NOT NULL DEFAULT NOW(),
@@ -216,3 +230,8 @@ CREATE TABLE verified_contracts
 
 CREATE INDEX verified_contracts_deployment_id ON verified_contracts USING btree (deployment_id);
 CREATE INDEX verified_contracts_compilation_id ON verified_contracts USING btree (compilation_id);
+
+CREATE TRIGGER trigger_set_updated_at
+BEFORE INSERT ON verified_contracts
+    FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
