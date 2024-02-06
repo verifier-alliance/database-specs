@@ -1,15 +1,6 @@
 /* Needed for gen_random_uuid(); */
 CREATE EXTENSION pgcrypto;
 
-/* Needed to automatically set `updated_at` fields on updates */
-CREATE OR REPLACE FUNCTION set_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 /*
     The `code` table stores a mapping from code hash to bytecode. This table may store
     both normalized and unnormalized code.
@@ -187,11 +178,6 @@ CREATE TABLE compiled_contracts
 CREATE INDEX compiled_contracts_creation_code_hash ON compiled_contracts USING btree (creation_code_hash);
 CREATE INDEX compiled_contracts_runtime_code_hash ON compiled_contracts USING btree (runtime_code_hash);
 
-CREATE TRIGGER trigger_set_updated_at
-BEFORE INSERT ON compiled_contracts
-    FOR EACH ROW
-EXECUTE FUNCTION set_updated_at();
-
 /*
     The verified_contracts table links an on-chain contract with a compiled_contract
     Note that only one of creation or runtime bytecode must match, because:
@@ -230,8 +216,3 @@ CREATE TABLE verified_contracts
 
 CREATE INDEX verified_contracts_deployment_id ON verified_contracts USING btree (deployment_id);
 CREATE INDEX verified_contracts_compilation_id ON verified_contracts USING btree (compilation_id);
-
-CREATE TRIGGER trigger_set_updated_at
-BEFORE INSERT ON verified_contracts
-    FOR EACH ROW
-EXECUTE FUNCTION set_updated_at();
