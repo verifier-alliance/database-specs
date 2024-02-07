@@ -81,13 +81,13 @@ CREATE TABLE contract_deployments
 
     /*
         geth full nodes have the ability to prune the transaction index, so if the transaction_hash
-        can't be found directly, use the block_number and txindex. make sure to compare the transaction_hash to
+        can't be found directly, use the block_number and transaction_index. make sure to compare the transaction_hash to
         make sure it matches!
 
         for genesis contracts, both values should be set to -1
     */
-    block_number    numeric NOT NULL,
-    txindex         numeric NOT NULL,
+    block_number        numeric NOT NULL,
+    transaction_index   numeric NOT NULL,
     
     /*
         this is the address which actually deployed the contract (i.e. called the create/create2 opcode)
@@ -187,7 +187,7 @@ CREATE INDEX compiled_contracts_runtime_code_hash ON compiled_contracts USING bt
 CREATE TABLE verified_contracts
 (
     /* an opaque id, but sequentially ordered */
-    id  BIGSERIAL NOT NULL,
+    id  BIGSERIAL NOT NULL PRIMARY KEY,
     
     /* timestamps */
     created_at  timestamptz NOT NULL DEFAULT NOW(),
