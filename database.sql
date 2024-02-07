@@ -63,6 +63,10 @@ CREATE TABLE contract_deployments
     /* an opaque id*/
     id  uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
 
+    /* timestamps */
+    created_at  timestamptz NOT NULL DEFAULT NOW(),
+    updated_at  timestamptz NOT NULL DEFAULT NOW(),
+
     /* ownership */
     created_by  varchar NOT NULL DEFAULT (current_user),
     updated_by  varchar NOT NULL DEFAULT (current_user),
@@ -240,7 +244,7 @@ CREATE INDEX verified_contracts_compilation_id ON verified_contracts USING btree
 */
 
 /* Needed to automatically set `created_at` fields on insertions. */
-CREATE OR REPLACE FUNCTION trigger_set_created_at()
+CREATE FUNCTION trigger_set_created_at()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.created_at = NOW();
@@ -249,7 +253,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 /*  Needed to prevent modifying `crerated_at` fields on updates */
-CREATE OR REPLACE FUNCTION trigger_reuse_created_at()
+CREATE FUNCTION trigger_reuse_created_at()
     RETURNS TRIGGER AS
 $$
 BEGIN
@@ -259,7 +263,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 /* Needed to automatically set `updated_at` fields on insertions and updates */
-CREATE OR REPLACE FUNCTION trigger_set_updated_at()
+CREATE FUNCTION trigger_set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_by = NOW();
@@ -314,7 +318,7 @@ $$ LANGUAGE plpgsql;
 */
 
 /* Needed to automatically set `created_by` fields on insertions. */
-CREATE OR REPLACE FUNCTION trigger_set_created_by()
+CREATE FUNCTION trigger_set_created_by()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.created_by = current_user;
@@ -323,7 +327,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 /*  Needed to prevent modifying `crerated_by` fields on updates */
-CREATE OR REPLACE FUNCTION trigger_reuse_created_by()
+CREATE FUNCTION trigger_reuse_created_by()
     RETURNS TRIGGER AS
 $$
 BEGIN
@@ -333,7 +337,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 /* Needed to automatically set `updated_by` fields on insertions and updates */
-CREATE OR REPLACE FUNCTION trigger_set_updated_by()
+CREATE FUNCTION trigger_set_updated_by()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_by = current_user;
