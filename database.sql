@@ -63,14 +63,6 @@ CREATE TABLE contract_deployments
     /* an opaque id*/
     id  uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    /* timestamps */
-    created_at  timestamptz NOT NULL DEFAULT NOW(),
-    updated_at  timestamptz NOT NULL DEFAULT NOW(),
-
-    /* ownership */
-    created_by  varchar NOT NULL DEFAULT (current_user),
-    updated_by  varchar NOT NULL DEFAULT (current_user),
-
     /*
         these three fields uniquely identify a specific deployment of a contract, assuming
         that it is impossible to deploy to successfully an address twice in the same transaction
@@ -352,8 +344,7 @@ $$
     DECLARE
         t_name text;
     BEGIN
-        FOR t_name IN (VALUES ('contract_deployments'),
-                              ('compiled_contracts'),
+        FOR t_name IN (VALUES ('compiled_contracts'),
                               ('verified_contracts'))
             LOOP
                 EXECUTE format('CREATE TRIGGER insert_set_created_by
