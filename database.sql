@@ -116,6 +116,10 @@ CREATE TABLE compiled_contracts
     created_at  timestamptz NOT NULL DEFAULT NOW(),
     updated_at  timestamptz NOT NULL DEFAULT NOW(),
 
+    /* ownership */
+    created_by  varchar NOT NULL DEFAULT (current_user),
+    updated_by  varchar NOT NULL DEFAULT (current_user),
+
     /*
         these three fields uniquely identify the high-level compiler mode to use
 
@@ -193,6 +197,10 @@ CREATE TABLE verified_contracts
     created_at  timestamptz NOT NULL DEFAULT NOW(),
     updated_at  timestamptz NOT NULL DEFAULT NOW(),
 
+    /* ownership */
+    created_by  varchar NOT NULL DEFAULT (current_user),
+    updated_by  varchar NOT NULL DEFAULT (current_user),
+
     /* the specific deployment and the specific compilation */
     deployment_id   uuid NOT NULL REFERENCES contract_deployments (id),
     compilation_id  uuid NOT NULL REFERENCES compiled_contracts (id),
@@ -216,3 +224,152 @@ CREATE TABLE verified_contracts
 
 CREATE INDEX verified_contracts_deployment_id ON verified_contracts USING btree (deployment_id);
 CREATE INDEX verified_contracts_compilation_id ON verified_contracts USING btree (compilation_id);
+
+/* 
+    Set up timestamps related triggers. Used to enforce `created_at` and `updated_at` 
+    specific rules and prevent users to set those columns to invalid values.
+    Spefically:
+        `created_at` - should be set to the current timestamp on new row insertion,
+                        and should not be modified after that.
+        `updated_at` - should be set to the current timestamp on new row insertion,
+                        and should be always be updated the corresponding value is modified.
+*/
+
+/* Needed to automatically set `created_at` fields on insertions. */
+CREATE FUNCTION trigger_set_created_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.created_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+/*  Needed to prevent modifying `crerated_at` fields on updates */
+CREATE FUNCTION trigger_reuse_created_at()
+    RETURNS TRIGGER AS
+$$
+BEGIN
+    NEW.created_at = OLD.created_at;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+/* Needed to automatically set `updated_at` fields on insertions and updates */
+CREATE FUNCTION trigger_set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_by = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO
+$$
+    DECLARE
+        t_name text;
+    BEGIN
+        FOR t_name IN (VALUES ('compiled_contracts'),
+                              ('verified_contracts'))
+            LOOP
+                EXECUTE format('CREATE TRIGGER insert_set_created_at
+                        BEFORE INSERT ON %I
+                            FOR EACH ROW
+                        EXECUTE FUNCTION trigger_set_created_at()',
+                               t_name);
+
+                EXECUTE format('CREATE TRIGGER insert_set_updated_at
+                        BEFORE INSERT ON %I
+                            FOR EACH ROW
+                        EXECUTE FUNCTION trigger_set_updated_at()',
+                               t_name);
+
+                EXECUTE format('CREATE TRIGGER update_reuse_created_at
+                        BEFORE UPDATE ON %I
+                            FOR EACH ROW
+                        EXECUTE FUNCTION trigger_reuse_created_at()',
+                               t_name);
+
+                EXECUTE format('CREATE TRIGGER update_set_updated_at
+                        BEFORE UPDATE ON %I
+                            FOR EACH ROW
+                        EXECUTE FUNCTION trigger_set_updated_at()',
+                               t_name);
+            END LOOP;
+    END;
+$$ LANGUAGE plpgsql;
+
+/* 
+    Set up ownership (who inserted the value) related triggers. 
+    Used to enforce `created_by` and `updated_by` specific rules and prevent users to 
+    set those columns to invalid values.
+    Spefically:
+        `created_by` - should be set to the current user on new row insertion,
+                        and should not be modified after that.
+        `updated_by` - should be set to the current user on new row insertion,
+                        and should be always be updated the corresponding value is modified.
+*/
+
+/* Needed to automatically set `created_by` fields on insertions. */
+CREATE FUNCTION trigger_set_created_by()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.created_by = current_user;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+/*  Needed to prevent modifying `crerated_by` fields on updates */
+CREATE FUNCTION trigger_reuse_created_by()
+    RETURNS TRIGGER AS
+$$
+BEGIN
+    NEW.created_by = OLD.created_by;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+/* Needed to automatically set `updated_by` fields on insertions and updates */
+CREATE FUNCTION trigger_set_updated_by()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_by = current_user;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+/* Set up ownership related triggers */
+DO
+$$
+    DECLARE
+        t_name text;
+    BEGIN
+        FOR t_name IN (VALUES ('compiled_contracts'),
+                              ('verified_contracts'))
+            LOOP
+                EXECUTE format('CREATE TRIGGER insert_set_created_by
+                        BEFORE INSERT ON %I
+                            FOR EACH ROW
+                        EXECUTE FUNCTION trigger_set_created_by()',
+                               t_name);
+
+                EXECUTE format('CREATE TRIGGER insert_set_updated_by
+                        BEFORE INSERT ON %I
+                            FOR EACH ROW
+                        EXECUTE FUNCTION trigger_set_updated_by()',
+                               t_name);
+
+                EXECUTE format('CREATE TRIGGER update_reuse_created_by
+                        BEFORE UPDATE ON %I
+                            FOR EACH ROW
+                        EXECUTE FUNCTION trigger_reuse_created_by()',
+                               t_name);
+
+                EXECUTE format('CREATE TRIGGER update_set_updated_by
+                        BEFORE UPDATE ON %I
+                            FOR EACH ROW
+                        EXECUTE FUNCTION trigger_set_updated_by()',
+                               t_name);
+            END LOOP;
+    END;
+$$ LANGUAGE plpgsql;
