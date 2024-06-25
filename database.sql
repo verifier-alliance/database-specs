@@ -1,4 +1,4 @@
-/* Needed for gen_random_uuid(); */
+/* Needed for gen_random_uuid() and digest(..) */
 CREATE EXTENSION pgcrypto;
 
 /*
@@ -15,11 +15,14 @@ CREATE EXTENSION pgcrypto;
 */
 CREATE TABLE code
 (
-    /* the keccak256 hash of the `code` column */
+    /* the sha3-256 hash of the `code` column */
     code_hash   bytea NOT NULL PRIMARY KEY,
 
     /* the bytecode */
     code    bytea
+
+    CONSTRAINT code_hash_check
+        CHECK (code IS NOT NULL and code_hash = digest(code, 'sha3-256') or code IS NULL and code_hash = '\x'::bytea)
 );
 
 /* ensure the sentinel value exists */
