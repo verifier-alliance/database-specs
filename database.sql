@@ -231,7 +231,8 @@ CREATE TABLE verified_contracts
     CONSTRAINT verified_contracts_runtime_transformations_is_array
         CHECK (runtime_transformations IS NULL OR jsonb_typeof(runtime_transformations) = 'array'),
 
-
+    CONSTRAINT verified_contracts_match_exists 
+        CHECK (creation_match = true OR runtime_match = true),
     CONSTRAINT verified_contracts_creation_match_integrity
         CHECK ((creation_match = false AND creation_values IS NULL AND creation_transformations IS NULL) OR
                (creation_match = true AND creation_values IS NOT NULL AND creation_transformations IS NOT NULL)),
