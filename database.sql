@@ -254,7 +254,7 @@ CREATE TABLE verified_contracts
                (creation_match = true AND creation_values IS NOT NULL AND creation_transformations IS NOT NULL AND creation_metadata_match IS NOT NULL)),
     CONSTRAINT verified_contracts_runtime_match_integrity
         CHECK ((runtime_match = false AND runtime_values IS NULL AND runtime_transformations IS NULL AND runtime_metadata_match IS NULL) OR
-                (runtime_match = true AND runtime_values IS NOT NULL AND runtime_transformations IS NOT NULL AND runtime_metadata_match IS NOT NULL));
+                (runtime_match = true AND runtime_values IS NOT NULL AND runtime_transformations IS NOT NULL AND runtime_metadata_match IS NOT NULL))
 );
 
 CREATE INDEX verified_contracts_deployment_id ON verified_contracts USING btree (deployment_id);
