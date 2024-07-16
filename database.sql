@@ -228,10 +228,12 @@ CREATE TABLE verified_contracts
     creation_match              bool NOT NULL,
     creation_values             jsonb,
     creation_transformations    jsonb,
+    creation_metadata_match     bool NOT NULL,
 
     runtime_match           bool NOT NULL,
     runtime_values          jsonb,
     runtime_transformations jsonb,
+    runtime_metadata_match  bool NOT NULL,
 
     CONSTRAINT verified_contracts_pseudo_pkey UNIQUE (compilation_id, deployment_id),
 
