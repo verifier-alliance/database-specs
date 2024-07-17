@@ -23,30 +23,17 @@ Since it is not possible to add a JSON validator to the GCP Postgres instance, w
 
 A "transformation" on bytecode is a necessary change in the bytecode string to achieve the exact (on-chain) bytecode from a base bytecode. These changes don't effect the functionality of the bytecode. It includes:
 
-- Constuctor Arguments
-- Immutable Variables
+- Constructor Arguments (only creation code)
+- Immutable Variables (only runtime code)
 - Libraries
-- CBOR Auxdata (CBOR metadata)
-- Call Protection
+- CBOR Auxdata
+- Call Protection (only runtime code)
 
-The the transformations (where in the code and the reason) are stored in `creation_` or `runtime_transformations` column and the inserted values are stored in `creation_` or `runtime_values` column.
+The transformations (where in the code and the reason) are stored in the `creation_` or `runtime_transformations` columns and the inserted values are stored in the `creation_` or `runtime_values` columns.
 
 Example:
 
 `runtime_transformations`:
-
-```json
-{
-  "immutables": {
-    "20": "0x000000000000000000000000b5d83c2436ad54046d57cd48c00d619d702f3814"
-  },
-  "cborAuxdata": {
-    "0": "0xa26469706673582212205817b060c918294cc8107069c4fd0a74dbfc35b0617214043887fe9d4e17a4a864736f6c634300081a0033"
-  }
-}
-```
-
-`runtime_values`:
 
 ```json
 [
@@ -63,6 +50,19 @@ Example:
     "reason": "auxdata"
   }
 ]
+```
+
+`runtime_values`:
+
+```json
+{
+  "immutables": {
+    "20": "0x000000000000000000000000b5d83c2436ad54046d57cd48c00d619d702f3814"
+  },
+  "cborAuxdata": {
+    "0": "0xa26469706673582212205817b060c918294cc8107069c4fd0a74dbfc35b0617214043887fe9d4e17a4a864736f6c634300081a0033"
+  }
+}
 ```
 
 ## verified_contracts
@@ -109,7 +109,7 @@ The values can be `"cborAuxdata"`, `"library"`, `"constructorArguments"`.
 
 ```json
 {
-  "library": {
+  "libraries": {
     "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__": "0x40b70a4904fad0ff86f8c901b231eac759a0ebb0"
   },
   "constructorArguments": "0x00000000000000000000000085fe79b998509b77bf10a8bd4001d58475d29386",
@@ -173,10 +173,10 @@ Example 1:
 
 ```json
 {
-  "library": {
+  "libraries": {
     "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__": "0x40b70a4904fad0ff86f8c901b231eac759a0ebb0"
   },
-  "immutable": {
+  "immutables": {
     "2473": "0x000000000000000000000000000000007f56768de3133034fa730a909003a165"
   },
   "cborAuxdata": {
