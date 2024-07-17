@@ -67,14 +67,14 @@ Example:
 
 ## verified_contracts
 
-### creation_transformation
+### creation_transformations
 
 This object contains the transformation that will be applied to the creation bytecode.
 
 The creation transformation can only contain these as `"reason"`s and `"type"`s:
 
-- `{ "reason": "constructor", "type": "insert", "offset": 999 }`
-- `{ "reason": "auxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
+- `{ "reason": "constructorArguments", "type": "insert", "offset": 999 }`
+- `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
 - `{ "reason": "library", "type": "replace", "offset": 123, id: "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__" }`
 
 Example:
@@ -91,12 +91,12 @@ Example:
     "id": "0",
     "type": "replace",
     "offset": 1269,
-    "reason": "auxdata"
+    "reason": "cborAuxdata"
   },
   {
     "type": "insert",
     "offset": 1322,
-    "reason": "constructor"
+    "reason": "constructorArguments"
   }
 ]
 ```
@@ -105,11 +105,11 @@ Example:
 
 This object contains the values that will be inserted/replaced in the creation bytecode.
 
-The values can be `"cborAuxdata"`, `"libraries"`, `"constructorArguments"`.
+The values can be `"cborAuxdata"`, `"library"`, `"constructorArguments"`.
 
 ```json
 {
-  "libraries": {
+  "library": {
     "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__": "0x40b70a4904fad0ff86f8c901b231eac759a0ebb0"
   },
   "constructorArguments": "0x00000000000000000000000085fe79b998509b77bf10a8bd4001d58475d29386",
@@ -122,6 +122,13 @@ The values can be `"cborAuxdata"`, `"libraries"`, `"constructorArguments"`.
 ### runtime_transformation
 
 Similar to `creation_transformation`. But runtime code does not contain constructor arguments but can have immutable variables and [call protection](https://docs.soliditylang.org/en/latest/contracts.html#call-protection-for-libraries). Typically if a contract has a call protection, it's a library contract and will not have other transformations.
+
+The runtime transformations can only contain these as `"reason"`s and `"type"`s:
+
+- `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
+- `{ "reason": "library", "type": "replace", "offset": 123, id: "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__" }`
+- `{ "reason": "immutable", "type": "insert", "offset": 999, id: "2473" }` Needs an `id` for referencing multiple times and there can be multiple immutable transformations.
+- `{ "reason": "callProtection", "type": "replace", "offset": 0 }`
 
 Example 1:
 
@@ -143,7 +150,7 @@ Example 1:
     "id": "1",
     "type": "replace",
     "offset": 4682,
-    "reason": "auxdata"
+    "reason": "cborAuxdata"
   }
 ]
 ```
@@ -155,7 +162,7 @@ Example 2:
   {
     "type": "replace",
     "offset": 0,
-    "reason": "call-protection"
+    "reason": "callProtection"
   }
 ]
 ```
@@ -166,10 +173,10 @@ Example 1:
 
 ```json
 {
-  "libraries": {
+  "library": {
     "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__": "0x40b70a4904fad0ff86f8c901b231eac759a0ebb0"
   },
-  "immutables": {
+  "immutable": {
     "2473": "0x000000000000000000000000000000007f56768de3133034fa730a909003a165"
   },
   "cborAuxdata": {
