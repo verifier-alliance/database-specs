@@ -4,6 +4,8 @@ The VerA schema contains columns that are marked as JSONs.
 
 Since it is not possible to add a JSON validator to the GCP Postgres instance, we define the JSON schemas here loosely and expect verifiers to follow them.
 
+These are the current JSON fields:
+
 `verified_contracts`:
 
 - `creation_values`
@@ -18,6 +20,12 @@ Since it is not possible to add a JSON validator to the GCP Postgres instance, w
 - `compilation_artifacts`
 - `creation_code_artifacts`
 - `runtime_code_artifacts`
+
+## Rules
+
+Apart from the specifications in each section below, the following rules apply to the JSON schemas:
+
+- All hexadecimal value strings must be prefixed with `0x` such as addresses, constructor arguments etc.
 
 ## Transformations
 
@@ -121,7 +129,7 @@ The values can be `"cborAuxdata"`, `"library"`, `"constructorArguments"`.
 
 ### runtime_transformation
 
-Similar to `creation_transformation`. But runtime code does not contain constructor arguments but can have immutable variables and [call protection](https://docs.soliditylang.org/en/latest/contracts.html#call-protection-for-libraries). Typically if a contract has a call protection, it's a library contract and will not have other transformations.
+Similar to `creation_transformation`. But runtime code does not contain constructor arguments but can have immutable variables and [call protection](https://docs.soliditylang.org/en/latest/contracts.html#call-protection-for-libraries).
 
 The runtime transformations can only contain these as `"reason"`s and `"type"`s:
 
