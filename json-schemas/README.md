@@ -127,7 +127,7 @@ The runtime transformations can only contain these as `"reason"`s and `"type"`s:
 
 - `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
 - `{ "reason": "library", "type": "replace", "offset": 123, id: "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__" }`
-- `{ "reason": "immutable", "type": "insert", "offset": 999, id: "2473" }` Needs an `id` for referencing multiple times and there can be multiple immutable transformations.
+- `{ "reason": "immutable", "type": "replace", "offset": 999, id: "2473" }` Needs an `id` for referencing multiple times and there can be multiple immutable transformations.
 - `{ "reason": "callProtection", "type": "replace", "offset": 0 }`
 
 Example 1:
