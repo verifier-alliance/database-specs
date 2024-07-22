@@ -141,6 +141,59 @@ CREATE TABLE contract_deployments
 CREATE INDEX contract_deployments_contract_id ON contract_deployments USING btree(contract_id);
 
 /*
+    Helper functions used to ensure the correctness of json objects.
+*/
+CREATE OR REPLACE FUNCTION validate_json_object_keys(obj jsonb, mandatory_keys text[], optional_keys text[])
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        (jsonb_typeof(obj) = 'object') AND
+        -- ensures that all keys on the right exist as keys inside obj
+        obj ?& mandatory_keys AND
+        -- check that no unknown key exists inside obj
+        bool_and(obj_keys = any (mandatory_keys || optional_keys))
+        from (select obj_keys from jsonb_object_keys(obj) as obj_keys) as subquery;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_json_object_keys(obj jsonb, mandatory_keys text[])
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_json_object_keys(obj, mandatory_keys, array []::text[]);
+END;
+$$ LANGUAGE plpgsql;
+
+/*
+    Validation functions to be used in `compiled_contracts` artifact constraints.
+*/
+CREATE OR REPLACE FUNCTION validate_compilation_artifacts(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_json_object_keys(obj, array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout']);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_creation_code_artifacts(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_json_object_keys(obj, array ['sourceMap', 'linkReferences'], array ['cborAuxdata']);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_runtime_code_artifacts(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_json_object_keys(obj, array ['sourceMap', 'linkReferences', 'immutableReferences'],
+                                     array ['cborAuxdata']);
+END;
+$$ LANGUAGE plpgsql;
+
+/*
     The `compiled_contracts` table stores information about a specific compilation. A compilation is
     defined as a set of inputs (compiler settings, source code, etc) which uniquely correspond to a
     set of outputs (bytecode, documentation, ast, etc)
@@ -214,7 +267,11 @@ CREATE TABLE compiled_contracts
         two different compilers producing the same bytecode is unique enough that we want to preserve it
         the same compiler with two different versions producing the same bytecode is not unique (f.ex nightlies)
     */
-    CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE (compiler, language, creation_code_hash, runtime_code_hash)
+    CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE (compiler, language, creation_code_hash, runtime_code_hash),
+
+    CONSTRAINT compilation_artifacts_object CHECK (validate_compilation_artifacts(compilation_artifacts)),
+    CONSTRAINT creation_code_artifacts_object CHECK (validate_creation_code_artifacts(creation_code_artifacts)),
+    CONSTRAINT runtime_code_artifacts_object CHECK (validate_runtime_code_artifacts(runtime_code_artifacts))
 );
 
 CREATE INDEX compiled_contracts_creation_code_hash ON compiled_contracts USING btree (creation_code_hash);
