@@ -26,6 +26,7 @@ These are the current JSON fields:
 Apart from the specifications in each section below, the following rules apply to the JSON schemas:
 
 - All hexadecimal value strings must be prefixed with `0x` such as addresses, constructor arguments etc.
+- `offset` values correspond to bytes in the bytecode and not string indexes. So `offset: 1` for the bytecode "0xab46fd" is the first byte in the bytecode corresponds to start from `46`
 
 ## Transformations
 
@@ -48,7 +49,7 @@ Example:
   {
     "id": "20",
     "type": "replace",
-    "offset": 137,
+    "offset": 137, // in bytes
     "reason": "immutable"
   },
   {
@@ -83,14 +84,14 @@ The creation transformation can only contain these as `"reason"`s and `"type"`s:
 
 - `{ "reason": "constructorArguments", "type": "insert", "offset": 999 }`
 - `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
-- `{ "reason": "library", "type": "replace", "offset": 123, id: "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__" }`
+- `{ "reason": "library", "type": "replace", "offset": 123, id: "sources/lib/MyLib.sol:MyLib" }`
 
 Example:
 
 ```json
 [
   {
-    "id": "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__",
+    "id": "sources/lib/MyLib.sol:MyLib",
     "type": "replace",
     "offset": 582,
     "reason": "library"
@@ -118,7 +119,7 @@ The values can be `"cborAuxdata"`, `"library"`, `"constructorArguments"`.
 ```json
 {
   "libraries": {
-    "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__": "0x40b70a4904fad0ff86f8c901b231eac759a0ebb0"
+    "sources/lib/MyLib.sol:MyLib": "0x40b70a4904fad0ff86f8c901b231eac759a0ebb0"
   },
   "constructorArguments": "0x00000000000000000000000085fe79b998509b77bf10a8bd4001d58475d29386",
   "cborAuxdata": {
@@ -134,16 +135,16 @@ Similar to `creation_transformation`. But runtime code does not contain construc
 The runtime transformations can only contain these as `"reason"`s and `"type"`s:
 
 - `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
-- `{ "reason": "library", "type": "replace", "offset": 123, id: "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__" }`
+- `{ "reason": "library", "type": "replace", "offset": 123, id: "contracts/order/OrderUtils.sol:OrderUtilsLib" }`
 - `{ "reason": "immutable", "type": "replace", "offset": 999, id: "2473" }` Needs an `id` for referencing multiple times and there can be multiple immutable transformations.
-- `{ "reason": "callProtection", "type": "replace", "offset": 0 }`
+- `{ "reason": "callProtection", "type": "replace", "offset": 1 }`
 
 Example 1:
 
 ```json
 [
   {
-    "id": "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__",
+    "id": "contracts/order/OrderUtils.sol:OrderUtilsLib",
     "type": "replace",
     "offset": 449,
     "reason": "library"
@@ -169,7 +170,7 @@ Example 2:
 [
   {
     "type": "replace",
-    "offset": 0,
+    "offset": 1, // does not include the PUSH20 opcode 0x73 in the beginning
     "reason": "callProtection"
   }
 ]
@@ -182,7 +183,7 @@ Example 1:
 ```json
 {
   "libraries": {
-    "__$757b5b171da3e0fe3a6c8dacd9aee462d3$__": "0x40b70a4904fad0ff86f8c901b231eac759a0ebb0"
+    "contracts/order/OrderUtils.sol:OrderUtilsLib": "0x40b70a4904fad0ff86f8c901b231eac759a0ebb0"
   },
   "immutables": {
     "2473": "0x000000000000000000000000000000007f56768de3133034fa730a909003a165"
@@ -197,7 +198,7 @@ Example 2:
 
 ```json
 {
-  "callProtection": "0x739deba23b95205127e906108f191a26f5d520896a"
+  "callProtection": "0x9deba23b95205127e906108f191a26f5d520896a" // just the 20 byte address without the 0x73 PUSH20 opcode in the beginning
 }
 ```
 
@@ -206,6 +207,8 @@ Example 2:
 ### sources
 
 The source files in JSON format.
+
+Keep in mind the format for the Solidity standard-input JSON is `sources: { "sourceName": { "content": "pragma solidity..." } }`.
 
 ```json
 {
