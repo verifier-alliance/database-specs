@@ -287,12 +287,20 @@ CREATE INDEX verified_contracts_compilation_id ON verified_contracts USING btree
 /*
     Helper functions used to ensure the correctness of json objects.
 */
+CREATE OR REPLACE FUNCTION is_object(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        jsonb_typeof(obj) = 'object';
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION validate_json_object_keys(obj jsonb, mandatory_keys text[], optional_keys text[])
     RETURNS boolean AS
 $$
 BEGIN
     RETURN
-        (jsonb_typeof(obj) = 'object') AND
         -- ensures that all keys on the right exist as keys inside obj
         obj ?& mandatory_keys AND
         -- check that no unknown key exists inside obj
@@ -308,11 +316,13 @@ CREATE OR REPLACE FUNCTION validate_compilation_artifacts(obj jsonb)
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN validate_json_object_keys(
-        obj, 
-        array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
-        array []::text[]
-    );
+    RETURN 
+        is_object(obj) AND 
+        validate_json_object_keys(
+            obj, 
+            array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
+            array []::text[]
+        );
 END;
 $$ LANGUAGE plpgsql;
 
@@ -320,11 +330,13 @@ CREATE OR REPLACE FUNCTION validate_creation_code_artifacts(obj jsonb)
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN validate_json_object_keys(
-        obj, 
-        array ['sourceMap', 'linkReferences'], 
-        array ['cborAuxdata']
-    );
+    RETURN 
+        is_object(obj) AND 
+        validate_json_object_keys(
+            obj, 
+            array ['sourceMap', 'linkReferences'], 
+            array ['cborAuxdata']
+        );
 END;
 $$ LANGUAGE plpgsql;
 
@@ -332,11 +344,13 @@ CREATE OR REPLACE FUNCTION validate_runtime_code_artifacts(obj jsonb)
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN validate_json_object_keys(
-        obj, 
-        array ['sourceMap', 'linkReferences', 'immutableReferences'],
-        array ['cborAuxdata']
-    );
+    RETURN 
+        is_object(obj) AND 
+        validate_json_object_keys(
+            obj, 
+            array ['sourceMap', 'linkReferences', 'immutableReferences'],
+            array ['cborAuxdata']
+        );
 END;
 $$ LANGUAGE plpgsql;
 
