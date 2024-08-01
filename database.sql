@@ -374,11 +374,13 @@ CREATE OR REPLACE FUNCTION validate_creation_values(obj jsonb)
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN validate_json_object_keys(
-        obj, 
-        array []::text[],
-        array ['libraries', 'cborAuxdata', 'constructorArguments']
-    );
+    RETURN 
+        is_object(obj) AND 
+        validate_json_object_keys(
+            obj, 
+            array []::text[],
+            array ['libraries', 'cborAuxdata', 'constructorArguments']
+        );
 END;
 $$ LANGUAGE plpgsql;
 
@@ -386,11 +388,12 @@ CREATE OR REPLACE FUNCTION validate_runtime_values(obj jsonb)
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN validate_json_object_keys(
-        obj, 
-        array []::text[],
-        array ['libraries', 'cborAuxdata', 'immutables', 'callProtection']
-    );
+    RETURN is_object(obj) AND 
+        validate_json_object_keys(
+            obj, 
+            array []::text[],
+            array ['libraries', 'cborAuxdata', 'immutables', 'callProtection']
+        );
 END;
 $$ LANGUAGE plpgsql;
 
