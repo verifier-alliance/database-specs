@@ -301,14 +301,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION validate_json_object_keys(obj jsonb, mandatory_keys text[])
-    RETURNS boolean AS
-$$
-BEGIN
-    RETURN validate_json_object_keys(obj, mandatory_keys, array []::text[]);
-END;
-$$ LANGUAGE plpgsql;
-
 /*
     Validation functions to be used in `compiled_contracts` artifact constraints.
 */
@@ -318,7 +310,8 @@ $$
 BEGIN
     RETURN validate_json_object_keys(
         obj, 
-        array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout']
+        array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
+        array []::text[]
     );
 END;
 $$ LANGUAGE plpgsql;
