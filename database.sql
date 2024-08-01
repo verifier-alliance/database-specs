@@ -367,6 +367,41 @@ ALTER TABLE compiled_contracts
 ADD CONSTRAINT runtime_code_artifacts_object 
 CHECK (validate_runtime_code_artifacts(runtime_code_artifacts));
 
+/*
+    Validation functions to be used in `verified_contracts` values constraints.
+*/
+CREATE OR REPLACE FUNCTION validate_creation_values(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_json_object_keys(
+        obj, 
+        array []::text[],
+        array ['libraries', 'cborAuxdata', 'constructorArguments']
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_runtime_values(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_json_object_keys(
+        obj, 
+        array []::text[],
+        array ['libraries', 'cborAuxdata', 'immutables', 'callProtection']
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+ALTER TABLE verified_contracts
+ADD CONSTRAINT creation_values_object 
+CHECK (validate_creation_values(creation_values));
+
+ALTER TABLE verified_contracts
+ADD CONSTRAINT runtime_values_object 
+CHECK (validate_runtime_values(runtime_values));
+
 /* 
     Set up timestamps related triggers. Used to enforce `created_at` and `updated_at` 
     specific rules and prevent users to set those columns to invalid values.
