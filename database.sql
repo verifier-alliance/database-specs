@@ -284,6 +284,89 @@ CREATE TABLE verified_contracts
 CREATE INDEX verified_contracts_deployment_id ON verified_contracts USING btree (deployment_id);
 CREATE INDEX verified_contracts_compilation_id ON verified_contracts USING btree (compilation_id);
 
+/*
+    Helper functions used to ensure the correctness of json objects.
+*/
+CREATE OR REPLACE FUNCTION is_object(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        jsonb_typeof(obj) = 'object';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_json_object_keys(obj jsonb, mandatory_keys text[], optional_keys text[])
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        -- ensures that all keys on the right exist as keys inside obj
+        obj ?& mandatory_keys AND
+        -- check that no unknown key exists inside obj
+        bool_and(obj_keys = any (mandatory_keys || optional_keys))
+        from (select obj_keys from jsonb_object_keys(obj) as obj_keys) as subquery;
+END;
+$$ LANGUAGE plpgsql;
+
+/*
+    Validation functions to be used in `compiled_contracts` artifact constraints.
+*/
+CREATE OR REPLACE FUNCTION validate_compilation_artifacts(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN 
+        is_object(obj) AND 
+        validate_json_object_keys(
+            obj, 
+            array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
+            array []::text[]
+        );
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_creation_code_artifacts(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN 
+        is_object(obj) AND 
+        validate_json_object_keys(
+            obj, 
+            array ['sourceMap', 'linkReferences'], 
+            array ['cborAuxdata']
+        );
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_runtime_code_artifacts(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN 
+        is_object(obj) AND 
+        validate_json_object_keys(
+            obj, 
+            array ['sourceMap', 'linkReferences', 'immutableReferences'],
+            array ['cborAuxdata']
+        );
+END;
+$$ LANGUAGE plpgsql;
+
+
+ALTER TABLE compiled_contracts
+ADD CONSTRAINT compilation_artifacts_object 
+CHECK (validate_compilation_artifacts(compilation_artifacts));
+
+ALTER TABLE compiled_contracts
+ADD CONSTRAINT creation_code_artifacts_object 
+CHECK (validate_creation_code_artifacts(creation_code_artifacts));
+
+ALTER TABLE compiled_contracts
+ADD CONSTRAINT runtime_code_artifacts_object 
+CHECK (validate_runtime_code_artifacts(runtime_code_artifacts));
+
 /* 
     Set up timestamps related triggers. Used to enforce `created_at` and `updated_at` 
     specific rules and prevent users to set those columns to invalid values.
