@@ -340,6 +340,8 @@ class TestObjectCborAuxdata:
             "runtime_values_object")
 
 ########## Tests callProtection field constraints ##########
+
+
 class TestObjectCallProtection:
     @pytest.fixture(scope='function', autouse=True)
     def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
