@@ -1,15 +1,20 @@
 from helpers import *
 
 
-class TestRuntimeValuesObjectConstraint:
+def setup(connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
+    dummy_code.insert(connection)
+    dummy_contract.insert(
+        connection, dummy_code.code_hash, dummy_code.code_hash)
+    dummy_contract_deployment.insert(connection, dummy_contract.id)
+    dummy_compiled_contract.insert(
+        connection, dummy_code.code_hash, dummy_code.code_hash)
+
+
+class TestObject:
     @pytest.fixture(scope='function', autouse=True)
     def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
-        dummy_code.insert(connection)
-        dummy_contract.insert(
-            connection, dummy_code.code_hash, dummy_code.code_hash)
-        dummy_contract_deployment.insert(connection, dummy_contract.id)
-        dummy_compiled_contract.insert(
-            connection, dummy_code.code_hash, dummy_code.code_hash)
+        setup(connection, dummy_code, dummy_contract,
+              dummy_contract_deployment, dummy_compiled_contract)
 
     def test_no_fields_are_required(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_values = dict({})
@@ -19,19 +24,8 @@ class TestRuntimeValuesObjectConstraint:
     def test_expected_type_values(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_values = dict({
             "libraries": {"file1:lib1": "0x4000000000000000000000000000000000000000"},
-            "immutables": {"123": "0x0000000000000000000000000000000000000000000000000000000000000000"},
+            "immutables": {"123": "0x6400000000000000000000000000000000000000000000000000000000000000"},
             "cborAuxdata": {"1": "0x00000000000000000000000000000000000000000000000000000000000000000000000000"}
-        })
-        dummy_verified_contract.insert(
-            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
-
-    # This test shows that empty json objects instead of libraries are also allowed according to schema.
-    # TODO: should they actually be allowed?
-    def test_default_type_values(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
-        dummy_verified_contract.runtime_values = dict({
-            "libraries": {},
-            "immutables": {},
-            "cborAuxdata": {}
         })
         dummy_verified_contract.insert(
             connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
@@ -53,6 +47,292 @@ class TestRuntimeValuesObjectConstraint:
 
     def test_unknown_field_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_values['unknown_key'] = dict({})
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+
+########## Tests libraries field constraints ##########
+class TestObjectLibraries:
+    @pytest.fixture(scope='function', autouse=True)
+    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
+        setup(connection, dummy_code, dummy_contract,
+              dummy_contract_deployment, dummy_compiled_contract)
+
+    def test_valid_field_value(self, connection, dummy_code, dummy_contract,
+                               dummy_contract_deployment, dummy_compiled_contract,
+                               dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "libraries": {"file1:lib1": "0x4000000000000000000000000000000000000000"}
+        })
+        dummy_verified_contract.insert(
+            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
+
+    def test_empty_object(self, connection, dummy_code, dummy_contract,
+                          dummy_contract_deployment, dummy_compiled_contract,
+                          dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "libraries": {}
+        })
+        dummy_verified_contract.insert(
+            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
+
+    @pytest.mark.parametrize("value", [None, [], ""], ids=["null", "array", "string"])
+    def test_invalid_type_fails(self, value, connection, dummy_code, dummy_contract,
+                                dummy_contract_deployment, dummy_compiled_contract,
+                                dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "libraries": value
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    @pytest.mark.parametrize("value", [None, [], dict({})], ids=["null", "array", "object"])
+    def test_additional_properties_with_invalid_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                                           dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "libraries": {"file1:lib1": value}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_without_0x_prefix_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                            dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "libraries": {"file1:lib1": "4000000000000000000000000000000000000000000000000"}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_not_valid_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                        dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "libraries": {"file1:lib1": "0xqw00000000000000000000000000000000000000000000000"}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_not_20_bytes_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                           dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "libraries": {"file1:lib1": "0x1000000000"}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_one_fail_all_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                       dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "libraries": {
+                "file1:lib1": "4000000000000000000000000000000000000000000000000",
+                "file2:lib2": "0x4000000000000000000000000000000000000000000000000"
+            }
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+########## Tests immutables field constraints ##########
+
+
+class TestObjectImmutables:
+    @pytest.fixture(scope='function', autouse=True)
+    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
+        setup(connection, dummy_code, dummy_contract,
+              dummy_contract_deployment, dummy_compiled_contract)
+
+    def test_valid_field_value(self, connection, dummy_code, dummy_contract,
+                               dummy_contract_deployment, dummy_compiled_contract,
+                               dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "immutables": {"123": "0x6400000000000000000000000000000000000000000000000000000000000000"},
+        })
+        dummy_verified_contract.insert(
+            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
+
+    def test_empty_object(self, connection, dummy_code, dummy_contract,
+                          dummy_contract_deployment, dummy_compiled_contract,
+                          dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "immutables": {}
+        })
+        dummy_verified_contract.insert(
+            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
+
+    @pytest.mark.parametrize("value", [None, [], ""], ids=["null", "array", "string"])
+    def test_invalid_type_fails(self, value, connection, dummy_code, dummy_contract,
+                                dummy_contract_deployment, dummy_compiled_contract,
+                                dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "immutables": value
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    @pytest.mark.parametrize("value", [None, [], dict({})], ids=["null", "array", "object"])
+    def test_additional_properties_with_invalid_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                                           dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "immutables": {"123": value},
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_without_0x_prefix_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                            dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "immutables": {"123": "6400000000000000000000000000000000000000000000000000000000000000"},
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_not_valid_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                        dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "immutables": {"123": "0xqwer000000000000000000000000000000000000000000000000000000000000"},
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_not_32_bytes_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                           dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "immutables": {"123": "0x1000000000"},
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_one_fail_all_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                       dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "immutables": {
+                "123": "6400000000000000000000000000000000000000000000000000000000000000",
+                "124": "0x6400000000000000000000000000000000000000000000000000000000000000"
+            }
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+########## Tests cborAuxdata field constraints ##########
+
+
+class TestObjectCborAuxdata:
+    @pytest.fixture(scope='function', autouse=True)
+    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
+        setup(connection, dummy_code, dummy_contract,
+              dummy_contract_deployment, dummy_compiled_contract)
+
+    def test_valid_field_value(self, connection, dummy_code, dummy_contract,
+                               dummy_contract_deployment, dummy_compiled_contract,
+                               dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "cborAuxdata": {"1": "0x00000000000000000000000000000000000000000000000000000000000000000000000000"}
+        })
+        dummy_verified_contract.insert(
+            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
+
+    def test_empty_object(self, connection, dummy_code, dummy_contract,
+                          dummy_contract_deployment, dummy_compiled_contract,
+                          dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "cborAuxdata": {}
+        })
+        dummy_verified_contract.insert(
+            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
+
+    @pytest.mark.parametrize("value", [None, [], ""], ids=["null", "array", "string"])
+    def test_invalid_type_fails(self, value, connection, dummy_code, dummy_contract,
+                                dummy_contract_deployment, dummy_compiled_contract,
+                                dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "cborAuxdata": value
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    @pytest.mark.parametrize("value", [None, [], dict({})], ids=["null", "array", "object"])
+    def test_additional_properties_with_invalid_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                                           dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "cborAuxdata": {"1": value}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_without_0x_prefix_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                            dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "cborAuxdata": {"1": "00000000000000000000000000000000000000000000000000000000000000000000000000"}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_not_valid_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                        dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "cborAuxdata": {"1": "0xqwer0000000000000000000000000000000000000000000000000000000000000000000000"}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_empty_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "cborAuxdata": {"1": "0x"}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_odd_length_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "cborAuxdata": {"1": "0x123"}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_one_fail_all_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                       dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "cborAuxdata": {
+                "1": "0x00000000000000000000000000000000000000000000000000000000000000000000000000",
+                "2": "00000000000000000000000000000000000000000000000000000000000000000000000000"
+            }
+        })
         check_constraint_fails(
             lambda: dummy_verified_contract.insert(
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
