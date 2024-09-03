@@ -32,6 +32,57 @@ class Code:
             """, (self.code_hash, self.code_hash_keccak, self.code))
 
 
+class Contract:
+    id = ""
+
+    @staticmethod
+    def dummy():
+        instance = Contract()
+        instance.id = 'df8fd690-70a8-4dd8-b42b-5c12e5d05dbe'
+        return instance
+
+    def insert(self, connection, creation_code_hash, runtime_code_hash):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO contracts (id, creation_code_hash, runtime_code_hash)
+                VALUES (%s, %s, %s)
+            """, (self.id, creation_code_hash, runtime_code_hash))
+
+
+class ContractDeployment:
+    id = ""
+    chain_id = 0
+    address = b''
+    transaction_hash = b''
+    block_number = 0
+    transaction_index = 0
+    deployer = b''
+
+    @staticmethod
+    def dummy():
+        instance = ContractDeployment()
+        instance.id = '42d20697-5427-4130-adbd-97daab2b2dd1'
+        instance.chain_id = 1
+        instance.address = bytes.fromhex(
+            '0000000000000000000000000000000000000000')
+        instance.transaction_hash = bytes.fromhex(
+            '0000000000000000000000000000000000000000000000000000000000000000')
+        instance.block_number = -1
+        instance.transaction_index = -1
+        instance.deployer = '0000000000000000000000000000000000000000'
+        return instance
+
+    def insert(self, connection, contract_id):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO contract_deployments (
+                    id, chain_id, address, transaction_hash,
+                    block_number, transaction_index, deployer, contract_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (self.id, self.chain_id, self.address, self.transaction_hash,
+                  self.block_number, self.transaction_index, self.deployer, contract_id))
+
+
 class CompiledContract:
     id = ""
     compiler = ""
@@ -84,6 +135,48 @@ class CompiledContract:
                   runtime_code_hash, json.dumps(self.runtime_code_artifacts)))
 
 
+class VerifiedContract:
+    id = ""
+    creation_match = False
+    creation_values = None
+    creation_transformations = None
+    creation_metadata_match = None
+    runtime_match = False
+    runtime_values = None
+    runtime_transformations = None
+    runtime_metadata_match = None
+
+    @staticmethod
+    def dummy():
+        instance = VerifiedContract()
+        instance.id = 1
+        instance.creation_match = True
+        instance.creation_values = dict()
+        instance.creation_transformations = []
+        instance.creation_metadata_match = True
+        instance.runtime_match = True
+        instance.runtime_values = dict()
+        instance.runtime_transformations = []
+        instance.runtime_metadata_match = True
+
+        return instance
+
+    def insert(self, connection, deployment_id, compilation_id):
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO verified_contracts (
+                    id, deployment_id, compilation_id,
+                    creation_match, creation_values, creation_transformations, creation_metadata_match,
+                    runtime_match, runtime_values, runtime_transformations, runtime_metadata_match)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (self.id, deployment_id, compilation_id,
+                  self.creation_match, json.dumps(self.creation_values),
+                  json.dumps(
+                      self.creation_transformations), self.creation_metadata_match,
+                  self.runtime_match, json.dumps(self.runtime_values),
+                  json.dumps(self.runtime_transformations), self.runtime_metadata_match))
+
+
 @pytest.fixture(scope="function", autouse=True)
 def initialize(connection):
     initialize_schema(connection)
@@ -108,8 +201,23 @@ def dummy_code() -> Code:
 
 
 @pytest.fixture
-def dummy_compiled_contract(dummy_code):
+def dummy_contract() -> Contract:
+    return Contract.dummy()
+
+
+@pytest.fixture
+def dummy_contract_deployment():
+    return ContractDeployment.dummy()
+
+
+@pytest.fixture
+def dummy_compiled_contract():
     return CompiledContract.dummy()
+
+
+@pytest.fixture
+def dummy_verified_contract():
+    return VerifiedContract.dummy()
 
 
 def initialize_schema(connection):
