@@ -287,15 +287,6 @@ CREATE INDEX verified_contracts_compilation_id ON verified_contracts USING btree
 /*
     Helper functions used to ensure the correctness of json objects.
 */
-CREATE OR REPLACE FUNCTION is_object(obj jsonb)
-    RETURNS boolean AS
-$$
-BEGIN
-    RETURN
-        jsonb_typeof(obj) = 'object';
-END;
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION is_jsonb_object(obj jsonb)
     RETURNS boolean AS
 $$
@@ -343,7 +334,7 @@ CREATE OR REPLACE FUNCTION validate_compilation_artifacts(obj jsonb)
 $$
 BEGIN
     RETURN 
-        is_object(obj) AND 
+        is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj, 
             array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
@@ -357,7 +348,7 @@ CREATE OR REPLACE FUNCTION validate_creation_code_artifacts(obj jsonb)
 $$
 BEGIN
     RETURN 
-        is_object(obj) AND 
+        is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj, 
             array ['sourceMap', 'linkReferences'], 
@@ -371,7 +362,7 @@ CREATE OR REPLACE FUNCTION validate_runtime_code_artifacts(obj jsonb)
 $$
 BEGIN
     RETURN 
-        is_object(obj) AND 
+        is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj, 
             array ['sourceMap', 'linkReferences', 'immutableReferences'],
