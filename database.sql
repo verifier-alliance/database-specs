@@ -503,6 +503,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION validate_values_call_protection(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    -- `obj` does not contain 'callProtection' key
+    IF NOT obj ? 'callProtection' THEN
+        RETURN true;
+    END IF;
+
+    RETURN is_jsonb_string(obj -> 'callProtection')
+               AND is_valid_hex(obj ->> 'callProtection', '{20}');
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION validate_creation_values(obj jsonb)
     RETURNS boolean AS
 $$
@@ -512,7 +526,7 @@ BEGIN
         validate_json_object_keys(
             obj,
             array []::text[],
-            array ['libraries', 'cborAuxdata', 'constructorArguments']
+            array ['constructorArguments', 'libraries', 'cborAuxdata']
         ) AND
         validate_values_constructor_arguments(obj) AND
         validate_values_libraries(obj) AND
@@ -529,11 +543,12 @@ BEGIN
         validate_json_object_keys(
             obj,
             array []::text[],
-            array ['libraries', 'cborAuxdata', 'immutables', 'callProtection']
+            array ['libraries', 'immutables', 'cborAuxdata', 'callProtection']
         ) AND
         validate_values_libraries(obj) AND
         validate_values_immutables(obj) AND
-        validate_values_cbor_auxdata(obj);
+        validate_values_cbor_auxdata(obj) AND
+        validate_values_call_protection(obj);
 END;
 $$ LANGUAGE plpgsql;
 

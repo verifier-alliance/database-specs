@@ -25,7 +25,8 @@ class TestObject:
         dummy_verified_contract.runtime_values = dict({
             "libraries": {"file1:lib1": "0x4000000000000000000000000000000000000000"},
             "immutables": {"123": "0x6400000000000000000000000000000000000000000000000000000000000000"},
-            "cborAuxdata": {"1": "0x00000000000000000000000000000000000000000000000000000000000000000000000000"}
+            "cborAuxdata": {"1": "0x00000000000000000000000000000000000000000000000000000000000000000000000000"},
+            "callProtection": "0x4000000000000000000000000000000000000000"
         })
         dummy_verified_contract.insert(
             connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
@@ -332,6 +333,58 @@ class TestObjectCborAuxdata:
                 "1": "0x00000000000000000000000000000000000000000000000000000000000000000000000000",
                 "2": "00000000000000000000000000000000000000000000000000000000000000000000000000"
             }
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+########## Tests callProtection field constraints ##########
+class TestObjectCallProtection:
+    @pytest.fixture(scope='function', autouse=True)
+    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
+        setup(connection, dummy_code, dummy_contract,
+              dummy_contract_deployment, dummy_compiled_contract)
+
+    def test_valid_field_value(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "callProtection": "0x4000000000000000000000000000000000000000"
+        })
+        dummy_verified_contract.insert(
+            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
+
+    @pytest.mark.parametrize("value", [None, [], dict()], ids=["null", "array", "object"])
+    def test_invalid_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "callProtection": value
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_without_0x_prefix_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "callProtection": "4000000000000000000000000000000000000000"
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_not_valid_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "callProtection": "0xqwer000000000000000000000000000000000000"
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_values_object")
+
+    def test_values_not_20_bytes_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                           dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_values = dict({
+            "callProtection": "0x1000000000"
         })
         check_constraint_fails(
             lambda: dummy_verified_contract.insert(
