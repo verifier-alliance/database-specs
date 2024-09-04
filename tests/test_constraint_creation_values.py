@@ -44,6 +44,13 @@ class TestObject:
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
             "creation_values_object")
 
+    def test_call_protection_field_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.creation_values["callProtection"] = "0x4000000000000000000000000000000000000000"
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "creation_values_object")
+
     def test_unknown_field_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_values['unknown_key'] = dict({})
         check_constraint_fails(
