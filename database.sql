@@ -305,6 +305,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION is_jsonb_array(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        jsonb_typeof(obj) = 'array';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION is_jsonb_number(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        jsonb_typeof(obj) = 'number';
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION is_valid_hex(val text, repetition text)
     RETURNS boolean AS
 $$
@@ -508,6 +526,131 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+CREATE OR REPLACE FUNCTION validate_transformation_key_type(object jsonb, expected_value text)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN object ? 'type' AND is_jsonb_string(object -> 'type') AND object ->> 'type' = expected_value;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_transformation_key_offset(object jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN object ? 'offset' AND is_jsonb_number(object -> 'offset') AND (object ->> 'offset')::integer >= 0;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_transformation_key_id(object jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN object ? 'id' AND is_jsonb_string(object -> 'id') AND length(object ->> 'id') > 0;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_transformations_constructor_arguments(object jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_transformation_key_type(object, 'insert') AND validate_transformation_key_offset(object);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_transformations_library(object jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_transformation_key_type(object, 'replace') AND validate_transformation_key_offset(object)
+        AND validate_transformation_key_id(object);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_transformations_immutable(object jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_transformation_key_type(object, 'replace') AND validate_transformation_key_offset(object)
+        AND validate_transformation_key_id(object);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_transformations_cbor_auxdata(object jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_transformation_key_type(object, 'replace') AND validate_transformation_key_offset(object)
+        AND validate_transformation_key_id(object);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_transformations_call_protection(object jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN validate_transformation_key_type(object, 'replace') AND validate_transformation_key_offset(object);
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION validate_transformations(transformations jsonb, allowed_reasons text[])
+    RETURNS boolean AS
+$$
+DECLARE
+    transformation_object jsonb;
+    reason                text;
+BEGIN
+    FOR transformation_object IN SELECT * FROM jsonb_array_elements(transformations)
+        LOOP
+            IF NOT is_jsonb_object(transformation_object)
+                OR NOT transformation_object ? 'reason'
+                OR NOT is_jsonb_string(transformation_object -> 'reason')
+                OR array_position(allowed_reasons, transformation_object ->> 'reason') IS NULL
+            THEN
+                RETURN false;
+            END IF;
+
+            reason := transformation_object ->> 'reason';
+
+            CASE
+                WHEN reason = 'constructorArguments'
+                    THEN RETURN validate_transformations_constructor_arguments(transformation_object);
+                WHEN reason = 'library' THEN RETURN validate_transformations_library(transformation_object);
+                WHEN reason = 'immutable' THEN RETURN validate_transformations_immutable(transformation_object);
+                WHEN reason = 'cborAuxdata' THEN RETURN validate_transformations_cbor_auxdata(transformation_object);
+                WHEN reason = 'callProtection'
+                    THEN RETURN validate_transformations_call_protection(transformation_object);
+                ELSE
+                END CASE;
+
+        END LOOP;
+
+    RETURN true;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_creation_transformations(transformations jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        is_jsonb_array(transformations) AND
+        validate_transformations(transformations, array ['constructorArguments', 'library', 'cborAuxdata']);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_runtime_transformations(transformations jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        is_jsonb_array(transformations) AND
+        validate_transformations(transformations, array ['library', 'immutable', 'cborAuxdata', 'callProtection']);
+END;
+$$ LANGUAGE plpgsql;
+
 ALTER TABLE verified_contracts
 ADD CONSTRAINT creation_values_object 
 CHECK (validate_creation_values(creation_values));
@@ -515,6 +658,14 @@ CHECK (validate_creation_values(creation_values));
 ALTER TABLE verified_contracts
 ADD CONSTRAINT runtime_values_object 
 CHECK (validate_runtime_values(runtime_values));
+
+ALTER TABLE verified_contracts
+ADD CONSTRAINT creation_transformations_array
+CHECK (validate_creation_transformations(creation_transformations));
+
+ALTER TABLE verified_contracts
+ADD CONSTRAINT runtime_transformations_array
+CHECK (validate_runtime_transformations(runtime_transformations));
 
 /* 
     Set up timestamps related triggers. Used to enforce `created_at` and `updated_at` 
