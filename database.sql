@@ -182,9 +182,6 @@ CREATE TABLE compiled_contracts
     /* the fully qualified name is compiler-specific and indicates exactly which contract to look for */
     fully_qualified_name    VARCHAR NOT NULL,
 
-    /* map of path to source code (string => string) */
-    sources                 jsonb NOT NULL,
-
     /* compiler-specific settings such as optimization, linking, etc (string => any) */
     compiler_settings       jsonb NOT NULL,
 
@@ -219,6 +216,53 @@ CREATE TABLE compiled_contracts
 
 CREATE INDEX compiled_contracts_creation_code_hash ON compiled_contracts USING btree (creation_code_hash);
 CREATE INDEX compiled_contracts_runtime_code_hash ON compiled_contracts USING btree (runtime_code_hash);
+
+/*
+    The `source_codes` table stores the source code related to the contracts.
+    It includes a hash of the source code and the code content itself.
+*/
+CREATE TABLE source_codes
+(
+    /* the sha256 hash of the source code */
+    source_code_hash bytea NOT NULL PRIMARY KEY,
+
+    /* the keccak256 hash of the source code */
+    source_code_hash_keccak bytea NOT NULL,
+
+    /* the programming language of the source code */
+    language varchar NOT NULL,
+
+    /* the actual source code content */
+    content varchar NOT NULL,
+
+    /* timestamps */
+    created_at  timestamptz NOT NULL DEFAULT NOW(),
+    updated_at  timestamptz NOT NULL DEFAULT NOW(),
+
+    /* ownership */
+    created_by  varchar NOT NULL DEFAULT (current_user),
+    updated_by  varchar NOT NULL DEFAULT (current_user)
+);
+
+/*
+    The `compiled_contracts_sources` table links a compiled_contract to its associated source files.
+    This table contains a unique combination of compilation_id and path.
+*/
+CREATE TABLE compiled_contracts_sources
+(
+    id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    /* the specific compilation and the specific source */
+    compilation_id uuid NOT NULL REFERENCES compiled_contracts(id),
+    source_code_hash bytea NOT NULL REFERENCES source_codes(source_code_hash),
+
+    /* the file path associated with this source code in the compilation */
+    path varchar NOT NULL,
+
+    CONSTRAINT compiled_contracts_sources_pseudo_pkey UNIQUE (compilation_id, path)
+);
+
+CREATE INDEX compiled_contracts_sources_source_code_hash ON compiled_contracts_sources USING btree (source_code_hash);
 
 /*
     The verified_contracts table links an on-chain contract with a compiled_contract
@@ -414,6 +458,8 @@ $$
                               ('contracts'),
                               ('contract_deployments'),
                               ('compiled_contracts'),
+                              ('source_codes'),
+                              ('compiled_contracts_sources'),
                               ('verified_contracts'))
             LOOP
                 EXECUTE format('CREATE TRIGGER insert_set_created_at
@@ -493,6 +539,8 @@ $$
                               ('contracts'),
                               ('contract_deployments'),
                               ('compiled_contracts'),
+                              ('source_codes'),
+                              ('compiled_contracts_sources'),
                               ('verified_contracts'))
             LOOP
                 EXECUTE format('CREATE TRIGGER insert_set_created_by
