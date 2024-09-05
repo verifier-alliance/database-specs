@@ -44,7 +44,7 @@ class TestCommon:
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
             "creation_transformations_array")
 
-    def test_no_reason_key_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+    def test_missing_key_reason_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_transformations = [
             {"type": "insert", "offset": 0, "id": "0"}
         ]
@@ -54,7 +54,7 @@ class TestCommon:
             "creation_transformations_array")
 
     @pytest.mark.parametrize("value", [None, [], dict()], ids=["null", "array", "object"])
-    def test_reason_with_invalid_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+    def test_invalid_key_reason_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_transformations = [
             {"reason": value, "type": "insert", "offset": 0, "id": "0"}
         ]
@@ -63,7 +63,7 @@ class TestCommon:
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
             "creation_transformations_array")
 
-    def test_invalid_reason_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+    def test_invalid_key_reason_value_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_transformations = [
             {"reason": "unknownReason", "type": "insert", "offset": 0, "id": "0"}
         ]
