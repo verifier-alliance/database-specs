@@ -247,10 +247,10 @@ CREATE TABLE source_codes
 );
 
 /*
-    The `contracts_sources` table links a compiled_contract to its associated source files.
+    The `compiled_contracts_sources` table links a compiled_contract to its associated source files.
     This table contains a unique combination of compilation_id and path.
 */
-CREATE TABLE contracts_sources
+CREATE TABLE compiled_contracts_sources
 (
     id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -261,11 +261,11 @@ CREATE TABLE contracts_sources
     /* the file path associated with this source code in the compilation */
     path varchar NOT NULL,
 
-    CONSTRAINT contracts_sources_pseudo_pkey UNIQUE (compilation_id, path)
+    CONSTRAINT compiled_contracts_sources_pseudo_pkey UNIQUE (compilation_id, path)
 );
 
-CREATE INDEX contracts_sources_source_code_hash ON contracts_sources USING btree (source_code_hash);
-CREATE INDEX contracts_sources_compilation_id ON contracts_sources (compilation_id);
+CREATE INDEX compiled_contracts_sources_source_code_hash ON compiled_contracts_sources USING btree (source_code_hash);
+CREATE INDEX compiled_contracts_sources_compilation_id ON compiled_contracts_sources (compilation_id);
 
 /*
     The verified_contracts table links an on-chain contract with a compiled_contract
