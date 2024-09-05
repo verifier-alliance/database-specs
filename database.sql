@@ -241,14 +241,16 @@ CREATE TABLE source_codes
 
     /* ownership */
     created_by  varchar NOT NULL DEFAULT (current_user),
-    updated_by  varchar NOT NULL DEFAULT (current_user)
+    updated_by  varchar NOT NULL DEFAULT (current_user),
+
+    CONSTRAINT source_code_hash_check CHECK (source_code_hash = digest(content, 'sha256'))
 );
 
 /*
-    The `compiled_contracts_sources` table links a compiled_contract to its associated source files.
+    The `contracts_sources` table links a compiled_contract to its associated source files.
     This table contains a unique combination of compilation_id and path.
 */
-CREATE TABLE compiled_contracts_sources
+CREATE TABLE contracts_sources
 (
     id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -259,10 +261,11 @@ CREATE TABLE compiled_contracts_sources
     /* the file path associated with this source code in the compilation */
     path varchar NOT NULL,
 
-    CONSTRAINT compiled_contracts_sources_pseudo_pkey UNIQUE (compilation_id, path)
+    CONSTRAINT contracts_sources_pseudo_pkey UNIQUE (compilation_id, path)
 );
 
-CREATE INDEX compiled_contracts_sources_source_code_hash ON compiled_contracts_sources USING btree (source_code_hash);
+CREATE INDEX contracts_sources_source_code_hash ON contracts_sources USING btree (source_code_hash);
+CREATE INDEX contracts_sources_compilation_id ON contracts_sources (compilation_id);
 
 /*
     The verified_contracts table links an on-chain contract with a compiled_contract
@@ -459,7 +462,6 @@ $$
                               ('contract_deployments'),
                               ('compiled_contracts'),
                               ('source_codes'),
-                              ('compiled_contracts_sources'),
                               ('verified_contracts'))
             LOOP
                 EXECUTE format('CREATE TRIGGER insert_set_created_at
@@ -540,7 +542,6 @@ $$
                               ('contract_deployments'),
                               ('compiled_contracts'),
                               ('source_codes'),
-                              ('compiled_contracts_sources'),
                               ('verified_contracts'))
             LOOP
                 EXECUTE format('CREATE TRIGGER insert_set_created_by
