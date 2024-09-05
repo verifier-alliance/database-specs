@@ -1,6 +1,7 @@
 from helpers import *
 
 
+@pytest.fixture(scope='function', autouse=True)
 def setup(connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
     dummy_code.insert(connection)
     dummy_contract.insert(
@@ -11,11 +12,6 @@ def setup(connection, dummy_code, dummy_contract, dummy_contract_deployment, dum
 
 
 class TestCommon:
-    @pytest.fixture(scope='function', autouse=True)
-    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
-        setup(connection, dummy_code, dummy_contract,
-              dummy_contract_deployment, dummy_compiled_contract)
-
     def test_empty_array_is_allowed(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = []
         dummy_verified_contract.insert(
@@ -88,11 +84,6 @@ class TestCommon:
 
 
 class TestLibrary:
-    @pytest.fixture(scope='function', autouse=True)
-    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
-        setup(connection, dummy_code, dummy_contract,
-              dummy_contract_deployment, dummy_compiled_contract)
-
     def test_valid_value(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
             {"reason": "library", "type": "replace",
@@ -194,11 +185,6 @@ class TestLibrary:
 
 
 class TestImmutable:
-    @pytest.fixture(scope='function', autouse=True)
-    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
-        setup(connection, dummy_code, dummy_contract,
-              dummy_contract_deployment, dummy_compiled_contract)
-
     def test_valid_value(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
             {"reason": "immutable", "type": "replace", "offset": 0, "id": "0"},
@@ -296,11 +282,6 @@ class TestImmutable:
 
 
 class TestCborAuxdata:
-    @pytest.fixture(scope='function', autouse=True)
-    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
-        setup(connection, dummy_code, dummy_contract,
-              dummy_contract_deployment, dummy_compiled_contract)
-
     def test_valid_value(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
             {"reason": "cborAuxdata", "type": "replace", "offset": 0, "id": "0"}
@@ -398,11 +379,6 @@ class TestCborAuxdata:
 
 
 class TestCallProtection:
-    @pytest.fixture(scope='function', autouse=True)
-    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
-        setup(connection, dummy_code, dummy_contract,
-              dummy_contract_deployment, dummy_compiled_contract)
-
     def test_valid_value(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
             {"reason": "callProtection", "type": "replace", "offset": 0}
