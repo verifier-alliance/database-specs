@@ -76,7 +76,7 @@ class CompiledContract:
                     id, compiler, version, language, name, fully_qualified_name, 
                     compiler_settings, compilation_artifacts, creation_code_hash, creation_code_artifacts,
                     runtime_code_hash, runtime_code_artifacts)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (self.id, self.compiler, self.version, self.language, self.name, self.fully_qualified_name,
                   json.dumps(self.compiler_settings), json.dumps(
                       self.compilation_artifacts), creation_code_hash, json.dumps(self.creation_code_artifacts),
