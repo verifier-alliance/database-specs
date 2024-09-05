@@ -1,6 +1,7 @@
 from helpers import *
 
 
+@pytest.fixture(scope='function', autouse=True)
 def setup(connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
     dummy_code.insert(connection)
     dummy_contract.insert(
@@ -11,11 +12,6 @@ def setup(connection, dummy_code, dummy_contract, dummy_contract_deployment, dum
 
 
 class TestObject:
-    @pytest.fixture(scope='function', autouse=True)
-    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
-        setup(connection, dummy_code, dummy_contract,
-              dummy_contract_deployment, dummy_compiled_contract)
-
     def test_no_fields_are_required(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_values = dict({})
         dummy_verified_contract.insert(
@@ -61,11 +57,6 @@ class TestObject:
 
 ########## Tests constructorArguments field constraints ##########
 class TestObjectConstructorArguments:
-    @pytest.fixture(scope='function', autouse=True)
-    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
-        setup(connection, dummy_code, dummy_contract,
-              dummy_contract_deployment, dummy_compiled_contract)
-
     def test_valid_field_value(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_values = dict({
             "constructorArguments": "0x1234"
@@ -119,15 +110,9 @@ class TestObjectConstructorArguments:
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
             "creation_values_object")
 
+
 ########## Tests libraries field constraints ##########
-
-
 class TestObjectLibraries:
-    @pytest.fixture(scope='function', autouse=True)
-    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
-        setup(connection, dummy_code, dummy_contract,
-              dummy_contract_deployment, dummy_compiled_contract)
-
     def test_valid_field_value(self, connection, dummy_code, dummy_contract,
                                dummy_contract_deployment, dummy_compiled_contract,
                                dummy_verified_contract):
@@ -212,15 +197,9 @@ class TestObjectLibraries:
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
             "creation_values_object")
 
+
 ########## Tests cborAuxdata field constraints ##########
-
-
 class TestObjectCborAuxdata:
-    @pytest.fixture(scope='function', autouse=True)
-    def setup(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract):
-        setup(connection, dummy_code, dummy_contract,
-              dummy_contract_deployment, dummy_compiled_contract)
-
     def test_valid_field_value(self, connection, dummy_code, dummy_contract,
                                dummy_contract_deployment, dummy_compiled_contract,
                                dummy_verified_contract):
