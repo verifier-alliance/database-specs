@@ -229,9 +229,6 @@ CREATE TABLE source_codes
     /* the keccak256 hash of the source code */
     source_code_hash_keccak bytea NOT NULL,
 
-    /* the programming language of the source code */
-    language varchar NOT NULL,
-
     /* the actual source code content */
     content varchar NOT NULL,
 
