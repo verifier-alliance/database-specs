@@ -39,7 +39,6 @@ class CompiledContract:
     language = ""
     name = ""
     fully_qualified_name = ""
-    sources = dict()
     compiler_settings = dict()
     compilation_artifacts = dict()
     creation_code_artifacts = dict()
@@ -74,11 +73,11 @@ class CompiledContract:
         with connection.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO compiled_contracts (
-                    id, compiler, version, language, name, fully_qualified_name, sources, 
+                    id, compiler, version, language, name, fully_qualified_name, 
                     compiler_settings, compilation_artifacts, creation_code_hash, creation_code_artifacts,
                     runtime_code_hash, runtime_code_artifacts)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (self.id, self.compiler, self.version, self.language, self.name, self.fully_qualified_name, json.dumps(self.sources),
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (self.id, self.compiler, self.version, self.language, self.name, self.fully_qualified_name,
                   json.dumps(self.compiler_settings), json.dumps(
                       self.compilation_artifacts), creation_code_hash, json.dumps(self.creation_code_artifacts),
                   runtime_code_hash, json.dumps(self.runtime_code_artifacts)))
