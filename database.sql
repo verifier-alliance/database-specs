@@ -218,16 +218,16 @@ CREATE INDEX compiled_contracts_creation_code_hash ON compiled_contracts USING b
 CREATE INDEX compiled_contracts_runtime_code_hash ON compiled_contracts USING btree (runtime_code_hash);
 
 /*
-    The `source_codes` table stores the source code related to the contracts.
-    It includes a hash of the source code and the code content itself.
+    The `sources` table stores the source code related to the contracts.
+    It includes hashes of the source code and the code content itself.
 */
-CREATE TABLE source_codes
+CREATE TABLE sources
 (
     /* the sha256 hash of the source code */
-    source_code_hash bytea NOT NULL PRIMARY KEY,
+    source_hash bytea NOT NULL PRIMARY KEY,
 
     /* the keccak256 hash of the source code */
-    source_code_hash_keccak bytea NOT NULL,
+    source_hash_keccak bytea NOT NULL,
 
     /* the actual source code content */
     content varchar NOT NULL,
@@ -240,7 +240,7 @@ CREATE TABLE source_codes
     created_by  varchar NOT NULL DEFAULT (current_user),
     updated_by  varchar NOT NULL DEFAULT (current_user),
 
-    CONSTRAINT source_code_hash_check CHECK (source_code_hash = digest(content, 'sha256'))
+    CONSTRAINT source_hash_check CHECK (source_hash = digest(content, 'sha256'))
 );
 
 /*
@@ -253,7 +253,7 @@ CREATE TABLE compiled_contracts_sources
 
     /* the specific compilation and the specific source */
     compilation_id uuid NOT NULL REFERENCES compiled_contracts(id),
-    source_code_hash bytea NOT NULL REFERENCES source_codes(source_code_hash),
+    source_hash bytea NOT NULL REFERENCES sources(source_hash),
 
     /* the file path associated with this source code in the compilation */
     path varchar NOT NULL,
@@ -261,7 +261,7 @@ CREATE TABLE compiled_contracts_sources
     CONSTRAINT compiled_contracts_sources_pseudo_pkey UNIQUE (compilation_id, path)
 );
 
-CREATE INDEX compiled_contracts_sources_source_code_hash ON compiled_contracts_sources USING btree (source_code_hash);
+CREATE INDEX compiled_contracts_sources_source_hash ON compiled_contracts_sources USING btree (source_hash);
 CREATE INDEX compiled_contracts_sources_compilation_id ON compiled_contracts_sources (compilation_id);
 
 /*
@@ -458,7 +458,7 @@ $$
                               ('contracts'),
                               ('contract_deployments'),
                               ('compiled_contracts'),
-                              ('source_codes'),
+                              ('sources'),
                               ('verified_contracts'))
             LOOP
                 EXECUTE format('CREATE TRIGGER insert_set_created_at
@@ -538,7 +538,7 @@ $$
                               ('contracts'),
                               ('contract_deployments'),
                               ('compiled_contracts'),
-                              ('source_codes'),
+                              ('sources'),
                               ('verified_contracts'))
             LOOP
                 EXECUTE format('CREATE TRIGGER insert_set_created_by
