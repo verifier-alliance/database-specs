@@ -331,12 +331,29 @@ CREATE INDEX verified_contracts_compilation_id ON verified_contracts USING btree
 /*
     Helper functions used to ensure the correctness of json objects.
 */
-CREATE OR REPLACE FUNCTION is_object(obj jsonb)
+CREATE OR REPLACE FUNCTION is_jsonb_object(obj jsonb)
     RETURNS boolean AS
 $$
 BEGIN
     RETURN
         jsonb_typeof(obj) = 'object';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION is_jsonb_string(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        jsonb_typeof(obj) = 'string';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION is_valid_hex(val text, repetition text)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN val SIMILAR TO CONCAT('0x([0-9|a-f|A-F][0-9|a-f|A-F])', repetition);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -361,7 +378,7 @@ CREATE OR REPLACE FUNCTION validate_compilation_artifacts(obj jsonb)
 $$
 BEGIN
     RETURN 
-        is_object(obj) AND 
+        is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj, 
             array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
@@ -375,7 +392,7 @@ CREATE OR REPLACE FUNCTION validate_creation_code_artifacts(obj jsonb)
 $$
 BEGIN
     RETURN 
-        is_object(obj) AND 
+        is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj, 
             array ['sourceMap', 'linkReferences'], 
@@ -389,7 +406,7 @@ CREATE OR REPLACE FUNCTION validate_runtime_code_artifacts(obj jsonb)
 $$
 BEGIN
     RETURN 
-        is_object(obj) AND 
+        is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj, 
             array ['sourceMap', 'linkReferences', 'immutableReferences'],
@@ -410,6 +427,138 @@ CHECK (validate_creation_code_artifacts(creation_code_artifacts));
 ALTER TABLE compiled_contracts
 ADD CONSTRAINT runtime_code_artifacts_object 
 CHECK (validate_runtime_code_artifacts(runtime_code_artifacts));
+
+/*
+    Validation functions to be used in `verified_contracts` values constraints.
+*/
+CREATE OR REPLACE FUNCTION validate_values_constructor_arguments(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    -- `obj` does not contain 'constructorArguments' key
+    IF NOT obj ? 'constructorArguments' THEN
+        RETURN true;
+    END IF;
+
+    RETURN is_jsonb_string(obj -> 'constructorArguments')
+               AND is_valid_hex(obj ->> 'constructorArguments', '+');
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_values_libraries(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    -- `obj` does not contain 'libraries' key
+    IF NOT obj ? 'libraries' THEN
+        RETURN true;
+    END IF;
+
+    -- we have to use IF, so that internal select subquery is executed only when `obj -> 'libraries'` is an object
+    IF is_jsonb_object(obj -> 'libraries') THEN
+        RETURN bool_and(are_valid_values)
+            FROM (SELECT is_jsonb_string(value) AND is_valid_hex(value ->> 0, '{20}') as are_valid_values
+                  FROM jsonb_each(obj -> 'libraries')) as subquery;
+    ELSE
+        RETURN false;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_values_immutables(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    -- `obj` does not contain 'immutables' key
+    IF NOT obj ? 'immutables' THEN
+        RETURN true;
+    END IF;
+
+    IF is_jsonb_object(obj -> 'immutables') THEN
+        RETURN bool_and(are_valid_values)
+            FROM (SELECT is_jsonb_string(value) AND is_valid_hex(value ->> 0, '{32}') as are_valid_values
+                  FROM jsonb_each(obj -> 'immutables')) as subquery;
+    ELSE
+        RETURN false;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_values_cbor_auxdata(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    -- `obj` does not contain 'cborAuxdata' key
+    IF NOT obj ? 'cborAuxdata' THEN
+        RETURN true;
+    END IF;
+
+    IF is_jsonb_object(obj -> 'cborAuxdata') THEN
+        RETURN bool_and(are_valid_values)
+            FROM (SELECT is_jsonb_string(value) AND is_valid_hex(value ->> 0, '+') as are_valid_values
+                  FROM jsonb_each(obj -> 'cborAuxdata')) as subquery;
+    ELSE
+        RETURN false;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_values_call_protection(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    -- `obj` does not contain 'callProtection' key
+    IF NOT obj ? 'callProtection' THEN
+        RETURN true;
+    END IF;
+
+    RETURN is_jsonb_string(obj -> 'callProtection')
+               AND is_valid_hex(obj ->> 'callProtection', '{20}');
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_creation_values(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN 
+        is_jsonb_object(obj) AND
+        validate_json_object_keys(
+            obj,
+            array []::text[],
+            array ['constructorArguments', 'libraries', 'cborAuxdata']
+        ) AND
+        validate_values_constructor_arguments(obj) AND
+        validate_values_libraries(obj) AND
+        validate_values_cbor_auxdata(obj);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_runtime_values(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        is_jsonb_object(obj) AND
+        validate_json_object_keys(
+            obj,
+            array []::text[],
+            array ['libraries', 'immutables', 'cborAuxdata', 'callProtection']
+        ) AND
+        validate_values_libraries(obj) AND
+        validate_values_immutables(obj) AND
+        validate_values_cbor_auxdata(obj) AND
+        validate_values_call_protection(obj);
+END;
+$$ LANGUAGE plpgsql;
+
+ALTER TABLE verified_contracts
+ADD CONSTRAINT creation_values_object 
+CHECK (validate_creation_values(creation_values));
+
+ALTER TABLE verified_contracts
+ADD CONSTRAINT runtime_values_object 
+CHECK (validate_runtime_values(runtime_values));
 
 /* 
     Set up timestamps related triggers. Used to enforce `created_at` and `updated_at` 
