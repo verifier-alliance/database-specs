@@ -305,17 +305,7 @@ CREATE TABLE verified_contracts
 
     CONSTRAINT verified_contracts_pseudo_pkey UNIQUE (compilation_id, deployment_id),
 
-    CONSTRAINT verified_contracts_creation_values_is_object
-        CHECK (creation_values IS NULL OR jsonb_typeof(creation_values) = 'object'),
-    CONSTRAINT verified_contracts_creation_transformations_is_array
-        CHECK (creation_transformations IS NULL OR jsonb_typeof(creation_transformations) = 'array'),
-
-    CONSTRAINT verified_contracts_runtime_values_is_object
-        CHECK (runtime_values IS NULL OR jsonb_typeof(runtime_values) = 'object'),
-    CONSTRAINT verified_contracts_runtime_transformations_is_array
-        CHECK (runtime_transformations IS NULL OR jsonb_typeof(runtime_transformations) = 'array'),
-
-    CONSTRAINT verified_contracts_match_exists 
+    CONSTRAINT verified_contracts_match_exists
         CHECK (creation_match = true OR runtime_match = true),
     CONSTRAINT verified_contracts_creation_match_integrity
         CHECK ((creation_match = false AND creation_values IS NULL AND creation_transformations IS NULL AND creation_metadata_match IS NULL) OR
