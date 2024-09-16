@@ -687,19 +687,19 @@ $$ LANGUAGE plpgsql;
 
 ALTER TABLE verified_contracts
 ADD CONSTRAINT creation_values_object 
-CHECK (validate_creation_values(creation_values));
+CHECK (creation_values IS NULL OR validate_creation_values(creation_values));
 
 ALTER TABLE verified_contracts
 ADD CONSTRAINT runtime_values_object 
-CHECK (validate_runtime_values(runtime_values));
+CHECK (runtime_values IS NULL OR validate_runtime_values(runtime_values));
 
 ALTER TABLE verified_contracts
 ADD CONSTRAINT creation_transformations_array
-CHECK (validate_creation_transformations(creation_transformations));
+CHECK (creation_transformations IS NULL OR validate_creation_transformations(creation_transformations));
 
 ALTER TABLE verified_contracts
 ADD CONSTRAINT runtime_transformations_array
-CHECK (validate_runtime_transformations(runtime_transformations));
+CHECK (runtime_transformations IS NULL OR validate_runtime_transformations(runtime_transformations));
 
 /* 
     Set up timestamps related triggers. Used to enforce `created_at` and `updated_at` 

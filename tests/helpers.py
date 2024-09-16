@@ -2,11 +2,18 @@ import json
 import os
 import pytest
 import psycopg2
+from dataclasses import dataclass
 
 
 def check_constraint_fails(function, constraint_name):
     with pytest.raises(psycopg2.errors.CheckViolation, match=fr'{constraint_name}'):
         function()
+
+
+@dataclass
+class Null:
+    def __init__(self):
+        pass
 
 
 class Code:
@@ -137,13 +144,13 @@ class CompiledContract:
 class VerifiedContract:
     id = ""
     creation_match = False
-    creation_values = None
-    creation_transformations = None
-    creation_metadata_match = None
+    creation_values = Null
+    creation_transformations = Null
+    creation_metadata_match = Null
     runtime_match = False
-    runtime_values = None
-    runtime_transformations = None
-    runtime_metadata_match = None
+    runtime_values = Null
+    runtime_transformations = Null
+    runtime_metadata_match = Null
 
     @staticmethod
     def dummy():
@@ -161,19 +168,36 @@ class VerifiedContract:
         return instance
 
     def insert(self, connection, deployment_id, compilation_id):
+        query_columns = "id, deployment_id, compilation_id, creation_match, runtime_match"
+        values = [self.id, deployment_id, compilation_id,
+                  self.creation_match, self.runtime_match]
+
+        if self.creation_values != Null:
+            query_columns += ", creation_values"
+            values.append(json.dumps(self.creation_values))
+        if self.creation_transformations != Null:
+            query_columns += ", creation_transformations"
+            values.append(json.dumps(self.creation_transformations))
+        if self.creation_metadata_match != Null:
+            query_columns += ", creation_metadata_match"
+            values.append(self.creation_metadata_match)
+
+        if self.runtime_values != Null:
+            query_columns += ", runtime_values"
+            values.append(json.dumps(self.runtime_values))
+        if self.runtime_transformations != Null:
+            query_columns += ", runtime_transformations"
+            values.append(json.dumps(self.runtime_transformations))
+        if self.runtime_metadata_match != Null:
+            query_columns += ", runtime_metadata_match"
+            values.append(self.runtime_metadata_match)
+
+        query_values = ", ".join(["%s"] * len(values))
         with connection.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO verified_contracts (
-                    id, deployment_id, compilation_id,
-                    creation_match, creation_values, creation_transformations, creation_metadata_match,
-                    runtime_match, runtime_values, runtime_transformations, runtime_metadata_match)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (self.id, deployment_id, compilation_id,
-                  self.creation_match, json.dumps(self.creation_values),
-                  json.dumps(
-                      self.creation_transformations), self.creation_metadata_match,
-                  self.runtime_match, json.dumps(self.runtime_values),
-                  json.dumps(self.runtime_transformations), self.runtime_metadata_match))
+            cursor.execute(f"""
+                INSERT INTO verified_contracts ({query_columns})
+                VALUES ({query_values})
+            """, values)
 
 
 @pytest.fixture(scope="function", autouse=True)
