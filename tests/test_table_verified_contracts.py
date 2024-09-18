@@ -73,6 +73,11 @@ class TestTable:
 
     @pytest.mark.parametrize("field", ["creation_values", "creation_transformations", "creation_metadata_match"])
     def test_creation_match_without_details_fails(self, field, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.creation_match = True
+        dummy_verified_contract.creation_values = dict()
+        dummy_verified_contract.creation_transformations = []
+        dummy_verified_contract.creation_metadata_match = True
+
         dummy_verified_contract.__setattr__(field, Null)
 
         check_constraint_fails(
@@ -98,6 +103,11 @@ class TestTable:
 
     @pytest.mark.parametrize("field", ["runtime_values", "runtime_transformations", "runtime_metadata_match"])
     def test_runtime_match_without_details_fails(self, field, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_match = True
+        dummy_verified_contract.runtime_values = dict()
+        dummy_verified_contract.runtime_transformations = []
+        dummy_verified_contract.runtime_metadata_match = True
+
         dummy_verified_contract.__setattr__(field, Null)
 
         check_constraint_fails(
