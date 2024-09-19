@@ -1,11 +1,12 @@
 from helpers import *
 
 
-class TestCompilationArtifactsConstraints:
-    @pytest.fixture(scope='function', autouse=True)
-    def insert_dummy_code(self, connection, dummy_code):
-        dummy_code.insert(connection)
+@pytest.fixture(scope='function', autouse=True)
+def setup(connection, dummy_code):
+    dummy_code.insert(connection)
 
+
+class TestObject:
     # All required fields as null objects ('cborAuxdata' is not required)
     def test_required_fields_as_nones(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.runtime_code_artifacts = dict({
@@ -52,19 +53,19 @@ class TestCompilationArtifactsConstraints:
     def test_type_none_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.runtime_code_artifacts = None
         check_constraint_fails(lambda: dummy_compiled_contract.insert(
-            connection, dummy_code.code_hash, dummy_code.code_hash), 'runtime_code_artifacts')
+            connection, dummy_code.code_hash, dummy_code.code_hash), 'runtime_code_artifacts_json_schema')
 
     def test_invalid_json_type_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.runtime_code_artifacts = "just a string"
         check_constraint_fails(
-            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'runtime_code_artifacts')
+            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'runtime_code_artifacts_json_schema')
 
     def test_missing_source_map_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.runtime_code_artifacts.pop("sourceMap")
         check_constraint_fails(
-            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'runtime_code_artifacts')
+            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'runtime_code_artifacts_json_schema')
 
     def test_missing_link_references_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.runtime_code_artifacts.pop("linkReferences")
         check_constraint_fails(
-            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'runtime_code_artifacts')
+            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'runtime_code_artifacts_json_schema')

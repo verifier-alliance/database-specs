@@ -425,15 +425,15 @@ $$ LANGUAGE plpgsql;
 
 
 ALTER TABLE compiled_contracts
-ADD CONSTRAINT compilation_artifacts_object 
+ADD CONSTRAINT compilation_artifacts_json_schema 
 CHECK (validate_compilation_artifacts(compilation_artifacts));
 
 ALTER TABLE compiled_contracts
-ADD CONSTRAINT creation_code_artifacts_object 
+ADD CONSTRAINT creation_code_artifacts_json_schema 
 CHECK (validate_creation_code_artifacts(creation_code_artifacts));
 
 ALTER TABLE compiled_contracts
-ADD CONSTRAINT runtime_code_artifacts_object 
+ADD CONSTRAINT runtime_code_artifacts_json_schema
 CHECK (validate_runtime_code_artifacts(runtime_code_artifacts));
 
 /*
