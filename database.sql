@@ -686,19 +686,19 @@ END;
 $$ LANGUAGE plpgsql;
 
 ALTER TABLE verified_contracts
-ADD CONSTRAINT creation_values_object 
+ADD CONSTRAINT creation_values_json_schema
 CHECK (creation_values IS NULL OR validate_creation_values(creation_values));
 
 ALTER TABLE verified_contracts
-ADD CONSTRAINT runtime_values_object 
+ADD CONSTRAINT runtime_values_json_schema
 CHECK (runtime_values IS NULL OR validate_runtime_values(runtime_values));
 
 ALTER TABLE verified_contracts
-ADD CONSTRAINT creation_transformations_array
+ADD CONSTRAINT creation_transformations_json_schema
 CHECK (creation_transformations IS NULL OR validate_creation_transformations(creation_transformations));
 
 ALTER TABLE verified_contracts
-ADD CONSTRAINT runtime_transformations_array
+ADD CONSTRAINT runtime_transformations_json_schema
 CHECK (runtime_transformations IS NULL OR validate_runtime_transformations(runtime_transformations));
 
 /* 
