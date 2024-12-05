@@ -720,7 +720,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-/*  Needed to prevent modifying `crerated_at` fields on updates */
+/*  Needed to prevent modifying `created_at` fields on updates */
 CREATE FUNCTION trigger_reuse_created_at()
     RETURNS TRIGGER AS
 $$
@@ -798,7 +798,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-/*  Needed to prevent modifying `crerated_by` fields on updates */
+/*  Needed to prevent modifying `created_by` fields on updates */
 CREATE FUNCTION trigger_reuse_created_by()
     RETURNS TRIGGER AS
 $$
