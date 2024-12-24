@@ -135,7 +135,7 @@ The runtime transformations can only contain these as `"reason"`s and `"type"`s:
 
 - `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
 - `{ "reason": "library", "type": "replace", "offset": 123, id: "contracts/order/OrderUtils.sol:OrderUtilsLib" }`
-- `{ "reason": "immutable", "type": "replace", "offset": 999, id: "2473" }` Needs an `id` for referencing multiple times and there can be multiple immutable transformations.
+- `{ "reason": "immutable", "type": "replace", "offset": 999, id: "2473" }` Needs an `id` for referencing multiple times and there can be multiple immutable transformations. Solidity contracts have `"replace"` type, while Vyper ones have `"insert"` because they are appended to the runtime bytecode.
 - `{ "reason": "callProtection", "type": "replace", "offset": 1 }`
 
 Example 1:

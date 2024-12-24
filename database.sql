@@ -606,7 +606,7 @@ CREATE OR REPLACE FUNCTION validate_transformations_immutable(object jsonb)
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN validate_transformation_key_type(object, 'replace') AND validate_transformation_key_offset(object)
+    RETURN (validate_transformation_key_type(object, 'replace') OR validate_transformation_key_type(object, 'insert')) AND validate_transformation_key_offset(object)
         AND validate_transformation_key_id(object);
 END;
 $$ LANGUAGE plpgsql;

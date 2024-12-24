@@ -192,6 +192,14 @@ class TestImmutable:
         dummy_verified_contract.insert(
             connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
 
+    def test_valid_value_insert(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_transformations = [
+            {"reason": "immutable", "type": "insert", "offset": 999, "id": "0"},
+        ]
+        dummy_verified_contract.insert(
+            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
+
+
     def test_missing_key_type_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
             {"reason": "immutable", "offset": 0, "id": "0"},
@@ -205,15 +213,6 @@ class TestImmutable:
     def test_invalid_key_type_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
             {"reason": "immutable", "type": value, "offset": 0, "id": "0"},
-        ]
-        check_constraint_fails(
-            lambda: dummy_verified_contract.insert(
-                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
-            "runtime_transformations_json_schema")
-
-    def test_invalid_key_type_value_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
-        dummy_verified_contract.runtime_transformations = [
-            {"reason": "immutable", "type": "insert", "offset": 0, "id": "0"},
         ]
         check_constraint_fails(
             lambda: dummy_verified_contract.insert(
