@@ -15,7 +15,6 @@ These are the current JSON fields:
 
 `compiled_contracts`:
 
-- `sources`
 - `compiler_settings`
 - `compilation_artifacts`
 - `creation_code_artifacts`
@@ -203,19 +202,6 @@ Example 2:
 ```
 
 ## compiled_contracts
-
-### sources
-
-The source files in JSON format.
-
-Keep in mind the format for the Solidity standard-input JSON is `sources: { "sourceName": { "content": "pragma solidity..." } }`.
-
-```json
-{
-  "contracts/ERC20.sol": "// SPDX-License-Identifier: MIT\npragma solidity >=0.8.11;\n\nimport Ownable from \"./utils/Ownable.sol\";\n\ncontract ERC20 is\n    Ownable...",
-  "contracts/utils/Ownable.sol": "pragma solidity..."
-}
-```
 
 ### compiler_settings
 
