@@ -484,7 +484,7 @@ BEGIN
 
     IF is_jsonb_object(obj -> 'immutables') THEN
         RETURN bool_and(are_valid_values)
-            FROM (SELECT is_jsonb_string(value) as are_valid_values
+            FROM (SELECT is_jsonb_string(value) AND is_valid_hex(value ->> 0, '+')
                   FROM jsonb_each(obj -> 'immutables')) as subquery;
     ELSE
         RETURN false;
