@@ -200,10 +200,10 @@ class TestObjectImmutables:
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
             "runtime_values_json_schema")
 
-    def test_values_not_32_bytes_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
-                                           dummy_compiled_contract, dummy_verified_contract):
+    def test_values_not_empty_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                        dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_values = dict({
-            "immutables": {"123": "0x1000000000"},
+            "immutables": {"123": "0x"},
         })
         check_constraint_fails(
             lambda: dummy_verified_contract.insert(
