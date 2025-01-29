@@ -404,8 +404,9 @@ BEGIN
        -- the corresponding value is expected to be an object with only the 'id' key
        is_jsonb_object(value) AND
        validate_json_object_keys(value, array ['id'], array []::text[]) AND
-       -- the value of 'id' key is expected to be an integer
-       is_jsonb_number(value -> 'id')
+       -- the value of 'id' key is expected to be a non-negative integer
+       is_jsonb_number(value -> 'id') AND
+       (value->>'id')::int >= 0
     )
     INTO are_object_values_valid
     FROM jsonb_each(obj);

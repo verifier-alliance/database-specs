@@ -132,6 +132,15 @@ class TestObject:
                 connection, dummy_code.code_hash, dummy_code.code_hash),
             "compilation_artifacts_json_schema")
 
+    def test_sources_id_subkey_value_is_negative_fails(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.compilation_artifacts['sources'] = {
+            "file.sol": {"id": -1}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash
+            ), "compilation_artifacts_json_schema"
+        )
+
     def test_sources_repetitive_id_subkey_values_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts['sources'] = {
             "file.sol": {"id": 0}, "file2.sol": {"id": 0}}
