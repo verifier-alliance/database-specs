@@ -199,7 +199,6 @@ class TestImmutable:
         dummy_verified_contract.insert(
             connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
 
-
     def test_missing_key_type_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
             {"reason": "immutable", "offset": 0, "id": "0"},
