@@ -357,6 +357,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION is_jsonb_null(obj jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN
+        jsonb_typeof(obj) = 'null';
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION is_valid_hex(val text, repetition text)
     RETURNS boolean AS
 $$
@@ -379,19 +388,65 @@ END;
 $$ LANGUAGE plpgsql;
 
 /*
+   Validates the internal values of compilation_artifacts->'sources'.
+   Precondition: sources MUST be a jsonb object.
+*/
+CREATE OR REPLACE FUNCTION validate_compilation_artifacts_sources_internal(obj jsonb)
+    RETURNS boolean AS
+$$
+DECLARE
+    are_object_values_valid bool;
+    are_ids_unique          bool;
+BEGIN
+    SELECT (
+        -- file name must be non-empty string
+       length(key) > 0 AND
+       -- the corresponding value is expected to be an object with only the 'id' key
+       is_jsonb_object(value) AND
+       validate_json_object_keys(value, array ['id'], array []::text[]) AND
+       -- the value of 'id' key is expected to be an integer
+       is_jsonb_number(value -> 'id')
+    )
+    INTO are_object_values_valid
+    FROM jsonb_each(obj);
+
+    SELECT count(value -> 'id') = count(DISTINCT value -> 'id')
+    INTO are_ids_unique
+    FROM jsonb_each(obj);
+
+    RETURN are_object_values_valid AND are_ids_unique;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_compilation_artifacts_sources(sources jsonb)
+    RETURNS boolean AS
+$$
+DECLARE
+    key_text    VARCHAR;
+    value_jsonb jsonb;
+BEGIN
+    RETURN is_jsonb_null(sources) OR (
+        is_jsonb_object(sources) AND
+        validate_compilation_artifacts_sources_internal(sources)
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+/*
     Validation functions to be used in `compiled_contracts` artifact constraints.
 */
 CREATE OR REPLACE FUNCTION validate_compilation_artifacts(obj jsonb)
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN 
+    RETURN
         is_jsonb_object(obj) AND
         validate_json_object_keys(
-            obj, 
+            obj,
             array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
             array []::text[]
-        );
+        ) AND
+        validate_compilation_artifacts_sources(obj -> 'sources');
 END;
 $$ LANGUAGE plpgsql;
 
