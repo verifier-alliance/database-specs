@@ -422,9 +422,6 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION validate_compilation_artifacts_sources(sources jsonb)
     RETURNS boolean AS
 $$
-DECLARE
-    key_text    VARCHAR;
-    value_jsonb jsonb;
 BEGIN
     RETURN is_jsonb_null(sources) OR (
         is_jsonb_object(sources) AND

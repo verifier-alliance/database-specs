@@ -25,7 +25,7 @@ class TestObject:
             "abi": [],
             "userdoc": {},
             "devdoc": {},
-            "sources": {},
+            "sources": {"file.sol": {"id": 0}},
             "storageLayout": {}
         })
         dummy_compiled_contract.insert(
@@ -37,7 +37,7 @@ class TestObject:
             "abi": "",
             "userdoc": [""],
             "devdoc": {"devdoc": ["value"]},
-            "sources": {"file.sol": {"id": 0}},
+            "sources": None,
             "storageLayout": None
         })
         dummy_compiled_contract.insert(
