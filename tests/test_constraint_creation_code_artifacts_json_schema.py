@@ -65,3 +65,101 @@ class TestObject:
         dummy_compiled_contract.creation_code_artifacts.pop("linkReferences")
         check_constraint_fails(
             lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'creation_code_artifacts_json_schema')
+
+
+########## Tests cbor_auxdata field constraints ##########
+class TestCborAuxdata:
+    def test_valid_field_value(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "id": {"value": "0x1234", "offset": 0}}
+        dummy_compiled_contract.insert(
+            connection, dummy_code.code_hash, dummy_code.code_hash)
+
+    @pytest.mark.parametrize("value", [0, "", []], ids=["number", "string", "array"])
+    def test_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = value
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')
+
+    def test_id_is_empty_string_fails(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "": {"value": "0x1234", "offset": 0}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [None, 0, "", []], ids=["null", "number", "string", "array"])
+    def test_id_value_has_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "id": value}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')
+
+    def test_value_subkey_is_missing_fails(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "id": {"offset": 0}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')
+
+    def test_offset_subkey_is_missing_fails(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "id": {"value": "0x1234"}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')
+
+    def test_unknown_subkey_fails(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "id": {"value": "0x1234", "offset": 0, "unknown": None}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [None, 0, [], {}], ids=["null", "number", "array", "object"])
+    def test_value_subkey_has_invalid_type_fails(self, value, connection, dummy_code,
+                                                 dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "id": {"value": value, "offset": 0}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", ["1234", "0xqw1234", "0x123", "0x"], ids=["without_0x_prefix", "not_valid_hex", "odd_number_of_symbols", "zero_length"])
+    def test_value_subkey_has_invalid_value_fails(self, value, connection, dummy_code,
+                                                  dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "id": {"value": value, "offset": 0}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [None, "", [], {}], ids=["null", "string", "array", "object"])
+    def test_offset_subkey_has_invalid_type_fails(self, value, connection, dummy_code,
+                                                  dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "id": {"value": "0x1234", "offset": value}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [-1], ids=["negative"])
+    def test_offset_subkey_has_invalid_value_fails(self, value, connection, dummy_code,
+                                                   dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "id": {"value": "0x1234", "offset": value}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')

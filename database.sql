@@ -457,6 +457,47 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+/*
+   Validates the internal values of (creation/runtime)_code_artifacts->'cborAuxdata'.
+   Precondition: obj MUST be a jsonb object.
+*/
+CREATE OR REPLACE FUNCTION validate_code_artifacts_cbor_auxdata_internal(obj jsonb)
+    RETURNS boolean AS
+$$
+DECLARE
+    are_object_values_valid bool;
+BEGIN
+    SELECT (
+        -- file name must be non-empty string
+        length(key) > 0 AND
+        -- the corresponding value is expected to be an object with only 'value' and 'offset' keys
+        is_jsonb_object(value) AND
+        validate_json_object_keys(value, array ['value', 'offset'], array []::text[]) AND
+        -- the value of 'value' key is expected to be a non-empty hex string
+        is_jsonb_string(value -> 'value') AND
+        is_valid_hex(value ->> 'value', '+') AND
+        -- the value of 'offset' key is expected to be a non-negative integer
+        is_jsonb_number(value -> 'offset') AND
+        (value->>'offset')::int >= 0
+    )
+    INTO are_object_values_valid
+    FROM jsonb_each(obj);
+
+    RETURN are_object_values_valid;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_code_artifacts_cbor_auxdata(cbor_auxdata jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN is_jsonb_null(cbor_auxdata) OR (
+        is_jsonb_object(cbor_auxdata) AND
+        validate_code_artifacts_cbor_auxdata_internal(cbor_auxdata)
+    );
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION validate_creation_code_artifacts(obj jsonb)
     RETURNS boolean AS
 $$
@@ -467,7 +508,8 @@ BEGIN
             obj, 
             array ['sourceMap', 'linkReferences'], 
             array ['cborAuxdata']
-        );
+        ) AND
+        validate_code_artifacts_cbor_auxdata(coalesce(obj -> 'cborAuxdata', 'null'::jsonb));
 END;
 $$ LANGUAGE plpgsql;
 
@@ -481,7 +523,8 @@ BEGIN
             obj, 
             array ['sourceMap', 'linkReferences', 'immutableReferences'],
             array ['cborAuxdata']
-        );
+        ) AND
+        validate_code_artifacts_cbor_auxdata(coalesce(obj -> 'cborAuxdata', 'null'::jsonb));
 END;
 $$ LANGUAGE plpgsql;
 
