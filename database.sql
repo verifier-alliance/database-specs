@@ -387,6 +387,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION validate_compilation_artifacts_abi(abi jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN is_jsonb_null(abi) OR is_jsonb_array(abi);
+END;
+$$ LANGUAGE plpgsql;
+
 /*
    Validates the internal values of compilation_artifacts->'sources'.
    Precondition: sources MUST be a jsonb object.
@@ -444,6 +452,7 @@ BEGIN
             array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
             array []::text[]
         ) AND
+        validate_compilation_artifacts_abi(obj -> 'abi') AND
         validate_compilation_artifacts_sources(obj -> 'sources');
 END;
 $$ LANGUAGE plpgsql;
