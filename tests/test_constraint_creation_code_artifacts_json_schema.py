@@ -164,6 +164,16 @@ class TestCborAuxdata:
                 connection, dummy_code.code_hash, dummy_code.code_hash),
             'creation_code_artifacts_json_schema')
 
+    def test_that_all_ids_are_checked(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['cborAuxdata'] = {
+            "id1": {"value": "0x1234", "offset": 0}, "id2": {"value": "0x1234", "offset": -1}
+        }
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema'
+        )
+
 
 class TestLinkReferences:
     def test_valid_field_value(self, connection, dummy_code, dummy_compiled_contract):

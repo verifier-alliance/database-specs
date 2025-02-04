@@ -467,7 +467,7 @@ $$
 DECLARE
     are_object_values_valid bool;
 BEGIN
-    SELECT (
+    SELECT bool_and (
         -- file name must be non-empty string
         length(key) > 0 AND
         -- the corresponding value is expected to be an object with only 'value' and 'offset' keys
