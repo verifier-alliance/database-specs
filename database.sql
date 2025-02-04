@@ -74,7 +74,7 @@ CREATE TABLE contracts
     */
     creation_code_hash  bytea NOT NULL REFERENCES code (code_hash),
     runtime_code_hash   bytea NOT NULL REFERENCES code (code_hash),
-    
+
     CONSTRAINT contracts_pseudo_pkey UNIQUE (creation_code_hash, runtime_code_hash)
 );
 
@@ -126,7 +126,7 @@ CREATE TABLE contract_deployments
     */
     block_number        numeric NOT NULL,
     transaction_index   numeric NOT NULL,
-    
+
     /*
         this is the address which actually deployed the contract (i.e. called the create/create2 opcode)
     */
@@ -149,7 +149,7 @@ CREATE TABLE compiled_contracts
 (
     /* an opaque id */
     id  uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
-    
+
     /* timestamps */
     created_at  timestamptz NOT NULL DEFAULT NOW(),
     updated_at  timestamptz NOT NULL DEFAULT NOW(),
@@ -274,7 +274,7 @@ CREATE TABLE verified_contracts
 (
     /* an opaque id, but sequentially ordered */
     id  BIGSERIAL NOT NULL PRIMARY KEY,
-    
+
     /* timestamps */
     created_at  timestamptz NOT NULL DEFAULT NOW(),
     updated_at  timestamptz NOT NULL DEFAULT NOW(),
@@ -498,18 +498,88 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+/*
+   Validates the content of (creation/runtime)_code_artifacts->'linkReferences'->'{file_name}'.
+   Precondition: obj MUST be a jsonb object.
+*/
+CREATE OR REPLACE FUNCTION validate_code_artifacts_link_references_internal_file_libraries(obj jsonb)
+    RETURNS boolean AS
+$$
+DECLARE
+    are_file_libraries_valid bool;
+BEGIN
+    SELECT bool_and (
+        -- library name must be non-empty string
+        length(key) > 0 AND
+        -- the corresponding value is expected to be an array of objects
+        is_jsonb_array(value) AND (
+            SELECT bool_and (
+                is_jsonb_object(library_references) AND
+                -- expected only 'start' (non-negative number) and 'length' (number always equals to 20) key-values
+                validate_json_object_keys(library_references, array ['start', 'length'], array []::text[]) AND
+                is_jsonb_number(library_references->'start') AND
+                (library_references->'start')::int >= 0 AND
+                is_jsonb_number(library_references->'length') AND
+                (library_references->'length')::int = 20
+            )
+            FROM jsonb_array_elements(value) library_references
+        )
+    )
+    INTO are_file_libraries_valid
+    FROM jsonb_each(obj);
+
+    RETURN are_file_libraries_valid;
+END;
+$$ LANGUAGE plpgsql;
+
+/*
+   Validates the internal values of (creation/runtime)_code_artifacts->'linkReferences'.
+   Precondition: obj MUST be a jsonb object.
+*/
+CREATE OR REPLACE FUNCTION validate_code_artifacts_link_references_internal(obj jsonb)
+    RETURNS boolean AS
+$$
+DECLARE
+    are_file_levels_valid bool;
+BEGIN
+    SELECT bool_and (
+        -- file name must be non-empty string
+        length(key) > 0 AND
+        -- the corresponding value is expected to be an object with library names as keys
+        is_jsonb_object(value) AND
+        validate_code_artifacts_link_references_internal_file_libraries(value)
+    )
+    INTO are_file_levels_valid
+    FROM jsonb_each(obj);
+
+    RETURN are_file_levels_valid;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_code_artifacts_link_references(link_references jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN is_jsonb_null(link_references) OR (
+        is_jsonb_object(link_references) AND
+        validate_code_artifacts_link_references_internal(link_references)
+    );
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION validate_creation_code_artifacts(obj jsonb)
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN 
+    RETURN
         is_jsonb_object(obj) AND
         validate_json_object_keys(
-            obj, 
-            array ['sourceMap', 'linkReferences'], 
+            obj,
+            array ['sourceMap', 'linkReferences'],
             array ['cborAuxdata']
         ) AND
-        validate_code_artifacts_cbor_auxdata(coalesce(obj -> 'cborAuxdata', 'null'::jsonb));
+        validate_code_artifacts_cbor_auxdata(coalesce(obj -> 'cborAuxdata', 'null'::jsonb)) AND
+        validate_code_artifacts_link_references(obj -> 'linkReferences');
 END;
 $$ LANGUAGE plpgsql;
 
@@ -517,24 +587,25 @@ CREATE OR REPLACE FUNCTION validate_runtime_code_artifacts(obj jsonb)
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN 
+    RETURN
         is_jsonb_object(obj) AND
         validate_json_object_keys(
-            obj, 
+            obj,
             array ['sourceMap', 'linkReferences', 'immutableReferences'],
             array ['cborAuxdata']
         ) AND
-        validate_code_artifacts_cbor_auxdata(coalesce(obj -> 'cborAuxdata', 'null'::jsonb));
+        validate_code_artifacts_cbor_auxdata(coalesce(obj -> 'cborAuxdata', 'null'::jsonb)) AND
+        validate_code_artifacts_link_references(obj -> 'linkReferences');
 END;
 $$ LANGUAGE plpgsql;
 
 
 ALTER TABLE compiled_contracts
-ADD CONSTRAINT compilation_artifacts_json_schema 
+ADD CONSTRAINT compilation_artifacts_json_schema
 CHECK (validate_compilation_artifacts(compilation_artifacts));
 
 ALTER TABLE compiled_contracts
-ADD CONSTRAINT creation_code_artifacts_json_schema 
+ADD CONSTRAINT creation_code_artifacts_json_schema
 CHECK (validate_creation_code_artifacts(creation_code_artifacts));
 
 ALTER TABLE compiled_contracts
@@ -634,7 +705,7 @@ CREATE OR REPLACE FUNCTION validate_creation_values(obj jsonb)
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN 
+    RETURN
         is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj,
