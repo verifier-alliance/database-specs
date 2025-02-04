@@ -224,6 +224,15 @@ class TestLinkReferences:
                 connection, dummy_code.code_hash, dummy_code.code_hash),
             'creation_code_artifacts_json_schema')
 
+    @pytest.mark.parametrize("value", [None, 0, "", []], ids=["null", "number", "string", "array"])
+    def test_array_item_has_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.creation_code_artifacts['linkReferences'] = {
+            "file_name.sol": {"library": [value]}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'creation_code_artifacts_json_schema')
+
     def test_unknown_subkey_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.creation_code_artifacts['linkReferences'] = {
             "file_name.sol": {"library": [{"start": 0, "length": 20, "unknown": None}]}}
