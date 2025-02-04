@@ -44,7 +44,7 @@ class TestObject:
         dummy_compiled_contract.runtime_code_artifacts = dict({
             "sourceMap": [],
             "linkReferences": None,
-            "immutableReferences": [""],
+            "immutableReferences": None,
             "cborAuxdata": None
         })
         dummy_compiled_contract.insert(
@@ -311,6 +311,124 @@ class TestLinkReferences:
     def test_that_all_library_references_are_checked(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.runtime_code_artifacts['linkReferences'] = {
             "file_name.sol": {"library1": [{"start": 0, "length": 20}, {"start": 100, "length": 0}]}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+
+class TestImmutableReferences:
+    def test_valid_field_value(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [{"start": 0, "length": 32}]}
+        dummy_compiled_contract.insert(
+            connection, dummy_code.code_hash, dummy_code.code_hash)
+
+    @pytest.mark.parametrize("value", [0, "", []], ids=["number", "string", "array"])
+    def test_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = value
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    def test_id_is_empty_string_fails(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "": [{"start": 0, "length": 32}]}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [None, 0, "", dict()], ids=["null", "number", "string", "object"])
+    def test_id_value_has_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": value}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [None, 0, "", []], ids=["null", "number", "string", "array"])
+    def test_array_item_has_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [value]}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    def test_unknown_subkey_fails(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [{"start": 0, "length": 32, "unknown": None}]}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    def test_start_subkey_is_missing_fails(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [{"length": 32}]}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [None, "", [], dict()], ids=["null", "string", "array", "object"])
+    def test_start_subkey_has_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [{"start": value, "length": 32}]}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [-1], ids=["negative"])
+    def test_start_subkey_has_invalid_value_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [{"start": value, "length": 32}]}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    def test_length_subkey_is_missing_fails(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [{"start": 0}]}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [None, "", [], dict()], ids=["null", "string", "array", "object"])
+    def test_length_subkey_has_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [{"start": 0, "length": value}]}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [-1, 0], ids=["negative", "zero"])
+    def test_length_subkey_has_invalid_value_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [{"start": 0, "length": value}]}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    def test_that_all_ids_are_checked(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [{"start": 0, "length": 32}], "1": [{}]}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'runtime_code_artifacts_json_schema')
+
+    def test_that_all_id_references_are_checked(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.runtime_code_artifacts['immutableReferences'] = {
+            "0": [{"start": 0, "length": 32}, {}]}
         check_constraint_fails(
             lambda: dummy_compiled_contract.insert(
                 connection, dummy_code.code_hash, dummy_code.code_hash),

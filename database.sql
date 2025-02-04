@@ -567,6 +567,51 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+/*
+   Validates the internal values of runtime_code_artifacts->'immutableReferences'.
+   Precondition: obj MUST be a jsonb object.
+*/
+CREATE OR REPLACE FUNCTION validate_code_artifacts_immutable_references_internal(obj jsonb)
+    RETURNS boolean AS
+$$
+DECLARE
+    are_values_valid bool;
+BEGIN
+    SELECT bool_and (
+        -- id must be non-empty string
+        length(key) > 0 AND
+        -- the corresponding value is expected to be an array of objects
+        is_jsonb_array(value) AND (
+            SELECT bool_and (
+                is_jsonb_object(_references) AND
+                -- expected only 'start' (non-negative number) and 'length' (positive number) key-values
+                validate_json_object_keys(_references, array ['start', 'length'], array []::text[]) AND
+                is_jsonb_number(_references->'start') AND
+                (_references->'start')::int >= 0 AND
+                is_jsonb_number(_references->'length') AND
+                (_references->'length')::int > 0
+            )
+            FROM jsonb_array_elements(value) _references
+        )
+    )
+    INTO are_values_valid
+    FROM jsonb_each(obj);
+
+    RETURN are_values_valid;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION validate_code_artifacts_immutable_references(immutable_references jsonb)
+    RETURNS boolean AS
+$$
+BEGIN
+    RETURN is_jsonb_null(immutable_references) OR (
+        is_jsonb_object(immutable_references) AND
+        validate_code_artifacts_immutable_references_internal(immutable_references)
+    );
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION validate_creation_code_artifacts(obj jsonb)
     RETURNS boolean AS
 $$
@@ -595,7 +640,8 @@ BEGIN
             array ['cborAuxdata']
         ) AND
         validate_code_artifacts_cbor_auxdata(coalesce(obj -> 'cborAuxdata', 'null'::jsonb)) AND
-        validate_code_artifacts_link_references(obj -> 'linkReferences');
+        validate_code_artifacts_link_references(obj -> 'linkReferences') AND
+        validate_code_artifacts_immutable_references(obj -> 'immutableReferences');
 END;
 $$ LANGUAGE plpgsql;
 
