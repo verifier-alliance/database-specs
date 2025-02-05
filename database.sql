@@ -728,13 +728,16 @@ BEGIN
         RETURN true;
     END IF;
 
-    IF is_jsonb_object(obj -> 'cborAuxdata') THEN
-        RETURN bool_and(are_valid_values)
-            FROM (SELECT is_jsonb_string(value) AND is_valid_hex(value ->> 0, '+') as are_valid_values
-                  FROM jsonb_each(obj -> 'cborAuxdata')) as subquery;
-    ELSE
+    IF NOT is_jsonb_object(obj -> 'cborAuxdata') THEN
         RETURN false;
     END IF;
+
+    RETURN bool_and(
+        length(key) > 0 AND
+        is_jsonb_string(value) AND
+        is_valid_hex(value ->> 0, '+')
+    )
+    FROM jsonb_each(obj -> 'cborAuxdata');
 END;
 $$ LANGUAGE plpgsql;
 
