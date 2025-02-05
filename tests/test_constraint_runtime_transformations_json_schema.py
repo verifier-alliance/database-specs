@@ -379,14 +379,14 @@ class TestCborAuxdata:
 class TestCallProtection:
     def test_valid_value(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
-            {"reason": "callProtection", "type": "replace", "offset": 0}
+            {"reason": "callProtection", "type": "replace", "offset": 1}
         ]
         dummy_verified_contract.insert(
             connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
 
     def test_missing_key_type_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
-            {"reason": "callProtection", "offset": 0}
+            {"reason": "callProtection", "offset": 1}
         ]
         check_constraint_fails(
             lambda: dummy_verified_contract.insert(
@@ -396,7 +396,7 @@ class TestCallProtection:
     @pytest.mark.parametrize("value", [None, 0, [], dict()], ids=["null", "number", "array", "object"])
     def test_invalid_key_type_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
-            {"reason": "callProtection", "type": value, "offset": 0}
+            {"reason": "callProtection", "type": value, "offset": 1}
         ]
         check_constraint_fails(
             lambda: dummy_verified_contract.insert(
@@ -405,7 +405,7 @@ class TestCallProtection:
 
     def test_invalid_key_type_value_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
-            {"reason": "callProtection", "type": "insert", "offset": 0}
+            {"reason": "callProtection", "type": "insert", "offset": 1}
         ]
         check_constraint_fails(
             lambda: dummy_verified_contract.insert(
@@ -431,11 +431,12 @@ class TestCallProtection:
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
             "runtime_transformations_json_schema")
 
-    def test_invalid_key_offset_value_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+    @pytest.mark.parametrize("value", [-1, 0, 2], ids=["negative", "zero", "positive_not_1"])
+    def test_invalid_key_offset_value_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment,
                                             dummy_compiled_contract, dummy_verified_contract):
-        # The offset must be >= 0
+        # The offset must always be equal to 1
         dummy_verified_contract.runtime_transformations = [
-            {"reason": "callProtection", "type": "replace", "offset": -1}
+            {"reason": "callProtection", "type": "replace", "offset": value}
         ]
         check_constraint_fails(
             lambda: dummy_verified_contract.insert(

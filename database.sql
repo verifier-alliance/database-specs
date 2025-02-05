@@ -854,7 +854,9 @@ CREATE OR REPLACE FUNCTION validate_transformations_call_protection(object jsonb
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN validate_transformation_key_type(object, 'replace') AND validate_transformation_key_offset(object);
+    RETURN validate_transformation_key_type(object, 'replace')
+        -- 'callProtection' value is always located at offset 1
+        AND validate_transformation_key_offset(object) AND (object ->> 'offset')::integer = 1;
 END;
 $$ LANGUAGE plpgsql;
 
