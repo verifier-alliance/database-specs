@@ -684,14 +684,16 @@ BEGIN
         RETURN true;
     END IF;
 
-    -- we have to use IF, so that internal select subquery is executed only when `obj -> 'libraries'` is an object
-    IF is_jsonb_object(obj -> 'libraries') THEN
-        RETURN bool_and(are_valid_values)
-            FROM (SELECT is_jsonb_string(value) AND is_valid_hex(value ->> 0, '{20}') as are_valid_values
-                  FROM jsonb_each(obj -> 'libraries')) as subquery;
-    ELSE
+    IF NOT is_jsonb_object(obj -> 'libraries') THEN
         RETURN false;
     END IF;
+
+    RETURN bool_and(
+        length(key) > 0 AND
+        is_jsonb_string(value) AND
+        is_valid_hex(value ->> 0, '{20}')
+    )
+    FROM jsonb_each(obj -> 'libraries');
 END;
 $$ LANGUAGE plpgsql;
 
