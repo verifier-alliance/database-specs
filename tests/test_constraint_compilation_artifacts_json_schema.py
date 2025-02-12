@@ -25,20 +25,21 @@ class TestObject:
             "abi": [],
             "userdoc": {},
             "devdoc": {},
-            "sources": {},
+            "sources": {"file.sol": {"id": 0}},
             "storageLayout": {}
         })
         dummy_compiled_contract.insert(
             connection, dummy_code.code_hash, dummy_code.code_hash)
 
     # Field types are not strictly defined and may be any valid json values
+    # For those, defined strictly the random value is set as `None`
     def test_random_json_values(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts = dict({
-            "abi": "",
+            "abi": None,
             "userdoc": [""],
             "devdoc": {"devdoc": ["value"]},
-            "sources": {"file.sol": {"id": 0}},
-            "storageLayout": None
+            "sources": None,
+            "storageLayout": ""
         })
         dummy_compiled_contract.insert(
             connection, dummy_code.code_hash, dummy_code.code_hash)
@@ -75,6 +76,12 @@ class TestObject:
 
     def test_missing_storage_layout_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts.pop("storageLayout")
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
+
+    @pytest.mark.parametrize("value", [0, "", {}], ids=["number", "string", "object"])
+    def test_abi_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.compilation_artifacts["abi"] = value
         check_constraint_fails(
             lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
 
