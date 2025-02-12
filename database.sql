@@ -684,14 +684,16 @@ BEGIN
         RETURN true;
     END IF;
 
-    -- we have to use IF, so that internal select subquery is executed only when `obj -> 'libraries'` is an object
-    IF is_jsonb_object(obj -> 'libraries') THEN
-        RETURN bool_and(are_valid_values)
-            FROM (SELECT is_jsonb_string(value) AND is_valid_hex(value ->> 0, '{20}') as are_valid_values
-                  FROM jsonb_each(obj -> 'libraries')) as subquery;
-    ELSE
+    IF NOT is_jsonb_object(obj -> 'libraries') THEN
         RETURN false;
     END IF;
+
+    RETURN bool_and(
+        length(key) > 0 AND
+        is_jsonb_string(value) AND
+        is_valid_hex(value ->> 0, '{20}')
+    )
+    FROM jsonb_each(obj -> 'libraries');
 END;
 $$ LANGUAGE plpgsql;
 
@@ -704,13 +706,16 @@ BEGIN
         RETURN true;
     END IF;
 
-    IF is_jsonb_object(obj -> 'immutables') THEN
-        RETURN bool_and(are_valid_values)
-            FROM (SELECT is_jsonb_string(value) AND is_valid_hex(value ->> 0, '+') as are_valid_values
-                  FROM jsonb_each(obj -> 'immutables')) as subquery;
-    ELSE
+    IF NOT is_jsonb_object(obj -> 'immutables') THEN
         RETURN false;
     END IF;
+
+    RETURN bool_and(
+        length(key) > 0 AND
+        is_jsonb_string(value) AND
+        is_valid_hex(value ->> 0, '+')
+    )
+    FROM jsonb_each(obj -> 'immutables');
 END;
 $$ LANGUAGE plpgsql;
 
@@ -723,13 +728,16 @@ BEGIN
         RETURN true;
     END IF;
 
-    IF is_jsonb_object(obj -> 'cborAuxdata') THEN
-        RETURN bool_and(are_valid_values)
-            FROM (SELECT is_jsonb_string(value) AND is_valid_hex(value ->> 0, '+') as are_valid_values
-                  FROM jsonb_each(obj -> 'cborAuxdata')) as subquery;
-    ELSE
+    IF NOT is_jsonb_object(obj -> 'cborAuxdata') THEN
         RETURN false;
     END IF;
+
+    RETURN bool_and(
+        length(key) > 0 AND
+        is_jsonb_string(value) AND
+        is_valid_hex(value ->> 0, '+')
+    )
+    FROM jsonb_each(obj -> 'cborAuxdata');
 END;
 $$ LANGUAGE plpgsql;
 
@@ -846,7 +854,9 @@ CREATE OR REPLACE FUNCTION validate_transformations_call_protection(object jsonb
     RETURNS boolean AS
 $$
 BEGIN
-    RETURN validate_transformation_key_type(object, 'replace') AND validate_transformation_key_offset(object);
+    RETURN validate_transformation_key_type(object, 'replace')
+        -- 'callProtection' value is always located at offset 1
+        AND validate_transformation_key_offset(object) AND (object ->> 'offset')::integer = 1;
 END;
 $$ LANGUAGE plpgsql;
 

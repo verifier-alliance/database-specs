@@ -64,7 +64,7 @@ class TestObjectConstructorArguments:
         dummy_verified_contract.insert(
             connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
 
-    @pytest.mark.parametrize("value", [None, [], dict()], ids=["null", "array", "object"])
+    @pytest.mark.parametrize("value", [None, 0, [], dict()], ids=["null", "number", "array", "object"])
     def test_invalid_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_values = dict({
             "constructorArguments": value
@@ -74,36 +74,11 @@ class TestObjectConstructorArguments:
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
             "creation_values_json_schema")
 
-    def test_without_0x_prefix_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+    @pytest.mark.parametrize("value", ["0x", "1234", "0xqwer", "0x123"],
+                             ids=["empty_hex", "without_0x_prefix", "not_hex", "odd_length"])
+    def test_invalid_value_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_values = dict({
-            "constructorArguments": "1234"
-        })
-        check_constraint_fails(
-            lambda: dummy_verified_contract.insert(
-                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
-            "creation_values_json_schema")
-
-    def test_not_valid_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
-        dummy_verified_contract.creation_values = dict({
-            "constructorArguments": "0xqwer"
-        })
-        check_constraint_fails(
-            lambda: dummy_verified_contract.insert(
-                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
-            "creation_values_json_schema")
-
-    def test_empty_hex_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
-        dummy_verified_contract.creation_values = dict({
-            "constructorArguments": "0x"
-        })
-        check_constraint_fails(
-            lambda: dummy_verified_contract.insert(
-                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
-            "creation_values_json_schema")
-
-    def test_odd_length_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
-        dummy_verified_contract.creation_values = dict({
-            "constructorArguments": "0x123"
+            "constructorArguments": value
         })
         check_constraint_fails(
             lambda: dummy_verified_contract.insert(
@@ -131,7 +106,7 @@ class TestObjectLibraries:
         dummy_verified_contract.insert(
             connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
 
-    @pytest.mark.parametrize("value", [None, [], ""], ids=["null", "array", "string"])
+    @pytest.mark.parametrize("value", [None, 0, [], ""], ids=["null", "number", "array", "string"])
     def test_invalid_type_fails(self, value, connection, dummy_code, dummy_contract,
                                 dummy_contract_deployment, dummy_compiled_contract,
                                 dummy_verified_contract):
@@ -143,7 +118,17 @@ class TestObjectLibraries:
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
             "creation_values_json_schema")
 
-    @pytest.mark.parametrize("value", [None, [], dict({})], ids=["null", "array", "object"])
+    def test_empty_key_name_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                  dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.creation_values = dict({
+            "libraries": {"": "0x4000000000000000000000000000000000000000"}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "creation_values_json_schema")
+
+    @pytest.mark.parametrize("value", [None, 0, [], dict({})], ids=["null", "number", "array", "object"])
     def test_additional_properties_with_invalid_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment,
                                                            dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_values = dict({
@@ -188,8 +173,8 @@ class TestObjectLibraries:
                                        dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_values = dict({
             "libraries": {
-                "file1:lib1": "4000000000000000000000000000000000000000000000000",
-                "file2:lib2": "0x4000000000000000000000000000000000000000000000000"
+                "file1:lib1": "0x4000000000000000000000000000000000000000000000000",
+                "file2:lib2": "4000000000000000000000000000000000000000000000000"
             }
         })
         check_constraint_fails(
@@ -218,7 +203,7 @@ class TestObjectCborAuxdata:
         dummy_verified_contract.insert(
             connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
 
-    @pytest.mark.parametrize("value", [None, [], ""], ids=["null", "array", "string"])
+    @pytest.mark.parametrize("value", [None, 0, [], ""], ids=["null", "number", "array", "string"])
     def test_invalid_type_fails(self, value, connection, dummy_code, dummy_contract,
                                 dummy_contract_deployment, dummy_compiled_contract,
                                 dummy_verified_contract):
@@ -230,7 +215,17 @@ class TestObjectCborAuxdata:
                 connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
             "creation_values_json_schema")
 
-    @pytest.mark.parametrize("value", [None, [], dict({})], ids=["null", "array", "object"])
+    def test_empty_key_name_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment,
+                                  dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.creation_values = dict({
+            "cborAuxdata": {"": "0x00000000000000000000000000000000000000000000000000000000000000000000000000"}
+        })
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "creation_values_json_schema")
+
+    @pytest.mark.parametrize("value", [None, 0, [], dict({})], ids=["null", "number", "array", "object"])
     def test_additional_properties_with_invalid_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment,
                                                            dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.creation_values = dict({
