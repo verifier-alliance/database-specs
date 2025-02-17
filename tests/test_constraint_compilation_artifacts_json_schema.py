@@ -79,24 +79,32 @@ class TestObject:
         check_constraint_fails(
             lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
 
-    @pytest.mark.parametrize("value", [0, "", {}], ids=["number", "string", "object"])
-    def test_abi_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
-        dummy_compiled_contract.compilation_artifacts["abi"] = value
-        check_constraint_fails(
-            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
-
     def test_unknown_field_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts['unknown_key'] = None
         check_constraint_fails(
             lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
 
+
+class TestAbi:
+    @pytest.mark.parametrize("value", [0, "", {}], ids=["number", "string", "object"])
+    def test_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.compilation_artifacts["abi"] = value
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            'compilation_artifacts_json_schema')
+
+
+class TestSources:
     @pytest.mark.parametrize("value", [0, "", []], ids=["number", "string", "array"])
-    def test_sources_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+    def test_invalid_type_fails(self, value, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts['sources'] = value
         check_constraint_fails(
-            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), "compilation_artifacts_json_schema")
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            "compilation_artifacts_json_schema")
 
-    def test_sources_file_name_empty_string_fails(self, connection, dummy_code, dummy_compiled_contract):
+    def test_file_name_empty_string_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts['sources'] = {
             "file.sol": {"id": 0}, "": {"id": 1}}
         check_constraint_fails(
@@ -105,8 +113,8 @@ class TestObject:
             "compilation_artifacts_json_schema")
 
     @pytest.mark.parametrize("value", [None, 0, "", []], ids=["null", "number", "string", "array"])
-    def test_sources_id_subkey_values_invalid_type_fails(self, value, connection, dummy_code,
-                                                         dummy_compiled_contract):
+    def test_id_subkey_values_invalid_type_fails(self, value, connection, dummy_code,
+                                                 dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts['sources'] = {
             "file.sol": value}
         check_constraint_fails(
@@ -114,7 +122,7 @@ class TestObject:
                 connection, dummy_code.code_hash, dummy_code.code_hash),
             "compilation_artifacts_json_schema")
 
-    def test_sources_missing_id_subkey_fails(self, connection, dummy_code, dummy_compiled_contract):
+    def test_missing_id_subkey_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts['sources'] = {
             "file.sol": {}}
         check_constraint_fails(
@@ -122,7 +130,7 @@ class TestObject:
                 connection, dummy_code.code_hash, dummy_code.code_hash),
             "compilation_artifacts_json_schema")
 
-    def test_sources_extra_subkey_fails(self, connection, dummy_code, dummy_compiled_contract):
+    def test_extra_subkey_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts['sources'] = {
             "file.sol": {"id": 0, "extra": 1}}
         check_constraint_fails(
@@ -131,7 +139,8 @@ class TestObject:
             "compilation_artifacts_json_schema")
 
     @pytest.mark.parametrize("value", [None, "", [], dict()], ids=["null", "string", "array", "object"])
-    def test_sources_id_subkey_value_type_is_not_number_fails(self, value, connection, dummy_code, dummy_compiled_contract):
+    def test_id_subkey_value_type_is_not_number_fails(self, value, connection, dummy_code,
+                                                      dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts['sources'] = {
             "file.sol": {"id": value}}
         check_constraint_fails(
@@ -139,7 +148,7 @@ class TestObject:
                 connection, dummy_code.code_hash, dummy_code.code_hash),
             "compilation_artifacts_json_schema")
 
-    def test_sources_id_subkey_value_is_negative_fails(self, connection, dummy_code, dummy_compiled_contract):
+    def test_id_subkey_value_is_negative_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts['sources'] = {
             "file.sol": {"id": -1}}
         check_constraint_fails(
@@ -148,9 +157,17 @@ class TestObject:
             ), "compilation_artifacts_json_schema"
         )
 
-    def test_sources_repetitive_id_subkey_values_fails(self, connection, dummy_code, dummy_compiled_contract):
+    def test_repetitive_id_subkey_values_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts['sources'] = {
             "file.sol": {"id": 0}, "file2.sol": {"id": 0}}
+        check_constraint_fails(
+            lambda: dummy_compiled_contract.insert(
+                connection, dummy_code.code_hash, dummy_code.code_hash),
+            "compilation_artifacts_json_schema")
+
+    def test_that_all_files_are_checked(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.compilation_artifacts['sources'] = {
+            "file.sol": {"id": 0}, "file2.sol": {}}
         check_constraint_fails(
             lambda: dummy_compiled_contract.insert(
                 connection, dummy_code.code_hash, dummy_code.code_hash),
