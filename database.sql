@@ -113,7 +113,7 @@ CREATE TABLE contract_deployments
 
         also note that for genesis contracts, creation_code_hash may be '\x' (i.e. there is no creation code)
     */
-    chain_id            numeric NOT NULL,
+    chain_id            bigint NOT NULL, // see https://github.com/verifier-alliance/database-specs/issues/23
     address             bytea NOT NULL,
     transaction_hash    bytea NOT NULL,
 
