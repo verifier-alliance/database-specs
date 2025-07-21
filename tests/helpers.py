@@ -243,9 +243,11 @@ def dummy_verified_contract():
     return VerifiedContract.dummy()
 
 
-def initialize_schema(connection):
+def initialize_schema(connection, schema_name="public"):
     with open('./database.sql', 'r') as schema_file:
         schema = schema_file.read()
 
     with connection.cursor() as cursor:
         cursor.execute(schema)
+        # Set the schema search path because `database.sql` resets it
+        cursor.execute(f"SET search_path = {schema_name}")
