@@ -15,7 +15,7 @@ jobs:
       DATABASE_URL: postgres://postgres:password@localhost:5432/test_db?sslmode=disable
       DBMATE_MIGRATIONS_DIR: ./migrations
       DBMATE_SCHEMA_FILE: ./database.sql
-    
+
     services:
       postgres:
         image: postgres:15
@@ -45,7 +45,7 @@ jobs:
         run: |
           # Apply migrations, dumps schema
           dbmate up
-          
+
           # Check if the schema file has changed
           if git diff --exit-code database.sql; then
             echo "✅ Schema validation passed - database.sql is in sync with migrations"
@@ -62,3 +62,22 @@ jobs:
             echo "  git add database.sql && git commit -m 'Update schema'"
             exit 1
           fi
+
+      - name: Test that down migrations work
+        run: |
+          # Drop db from previous test
+          dbmate drop
+          # Apply migrations
+          dbmate up
+
+          for i in ./migrations/*
+          do
+            if test -f "$i"
+            then
+              # The command will fail if something is wrong
+              dbmate down
+            fi
+          done;
+
+          # Check if migrations can be run again
+          dbmate up
