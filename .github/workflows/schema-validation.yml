@@ -1,0 +1,83 @@
+name: Schema Validation
+
+on:
+  pull_request:
+    paths:
+      - database.sql
+      - migrations/**
+      - .github/workflows/schema-validation.yml
+
+jobs:
+  validate-schema:
+    name: Validate Database Schema
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://postgres:password@localhost:5432/test_db?sslmode=disable
+      DBMATE_MIGRATIONS_DIR: ./migrations
+      DBMATE_SCHEMA_FILE: ./database.sql
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install dbmate
+        run: |
+          curl -fsSL -o dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
+          chmod +x dbmate
+          sudo mv dbmate /usr/local/bin/
+
+      - name: Validate schema is in sync with migrations
+        run: |
+          # Apply migrations, dumps schema
+          dbmate up
+
+          # Check if the schema file has changed
+          if git diff --exit-code database.sql; then
+            echo "✅ Schema validation passed - database.sql is in sync with migrations"
+          else
+            echo "::error::Schema file is out of sync with migrations!"
+            echo ""
+            echo "The database.sql file does not match what the migrations produce."
+            echo ""
+            echo "To fix this, run a postgres instance locally."
+            echo "Then apply the migrations to a clean database:"
+            echo "  dbmate up"
+            echo ""
+            echo "Then include the updated schema in your commit:"
+            echo "  git add database.sql && git commit -m 'Update schema'"
+            exit 1
+          fi
+
+      - name: Test that down migrations work
+        run: |
+          # Drop db from previous test
+          dbmate drop
+          # Apply migrations
+          dbmate up
+
+          for i in ./migrations/*
+          do
+            if test -f "$i"
+            then
+              # The command will fail if something is wrong
+              dbmate down
+            fi
+          done;
+
+          # Check if migrations can be run again
+          dbmate up
