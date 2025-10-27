@@ -1048,7 +1048,7 @@ ALTER TABLE ONLY public.compiled_contracts
 --
 
 ALTER TABLE ONLY public.compiled_contracts
-    ADD CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE (compiler, language, creation_code_hash, runtime_code_hash);
+    ADD CONSTRAINT compiled_contracts_pseudo_pkey UNIQUE (compiler, version, language, creation_code_hash, runtime_code_hash);
 
 
 --
@@ -1634,4 +1634,5 @@ ALTER TABLE ONLY public.verified_contracts
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20250717103432'),
-    ('20250723145429');
+    ('20250723145429'),
+    ('20251023134207');
