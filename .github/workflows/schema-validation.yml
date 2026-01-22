@@ -41,28 +41,35 @@ jobs:
           chmod +x dbmate
           sudo mv dbmate /usr/local/bin/
 
-      # Currently skipping since pg_dump doesn't produce consistent output anymore
-      # - name: Validate schema is in sync with migrations
-      #   run: |
-      #     # Apply migrations, dumps schema
-      #     dbmate up
+      - name: Validate schema is in sync with migrations
+        run: |
+          # Apply migrations
+          dbmate up
 
-      #     # Check if the schema file has changed
-      #     if git diff --exit-code database.sql; then
-      #       echo "✅ Schema validation passed - database.sql is in sync with migrations"
-      #     else
-      #       echo "::error::Schema file is out of sync with migrations!"
-      #       echo ""
-      #       echo "The database.sql file does not match what the migrations produce."
-      #       echo ""
-      #       echo "To fix this, run a postgres instance locally."
-      #       echo "Then apply the migrations to a clean database:"
-      #       echo "  dbmate up"
-      #       echo ""
-      #       echo "Then include the updated schema in your commit:"
-      #       echo "  git add database.sql && git commit -m 'Update schema'"
-      #       exit 1
-      #     fi
+          # Force dump in case problems were ignored
+          DBMATE_SCHEMA_FILE=ci-dump.sql dbmate dump
+
+          # Check if the schema file has changed
+          # Define cleanup function to remove comments and psql meta-commands
+          clean_sql() {
+            sed -e '/^--/d' -e '/^\\restrict/d' -e '/^\\unrestrict/d' "$1"
+          }
+
+          if diff -u <(clean_sql database.sql) <(clean_sql ci-dump.sql); then
+            echo "✅ Schema validation passed - database.sql is in sync with migrations"
+          else
+            echo "::error::Schema file is out of sync with migrations!"
+            echo ""
+            echo "The database.sql file does not match what the migrations produce."
+            echo ""
+            echo "To fix this, run a postgres instance locally."
+            echo "Then apply the migrations to a clean database:"
+            echo "  dbmate up"
+            echo ""
+            echo "Then include the updated schema in your commit:"
+            echo "  git add database.sql && git commit -m 'Update schema'"
+            exit 1
+          fi
 
       - name: Test that down migrations work
         run: |
