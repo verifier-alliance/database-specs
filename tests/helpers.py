@@ -247,6 +247,15 @@ def initialize_schema(connection, schema_name="public"):
     with open('./database.sql', 'r') as schema_file:
         schema = schema_file.read()
 
+    # Remove psql meta-commands that are not valid SQL
+    # Filter out lines starting with \restrict, and \unrestrict
+    schema_lines = schema.split('\n')
+    filtered_lines = [
+        line for line in schema_lines
+        if not line.strip().startswith(('\\restrict', '\\unrestrict'))
+    ]
+    schema = '\n'.join(filtered_lines)
+
     with connection.cursor() as cursor:
         cursor.execute(schema)
         # Set the schema search path because `database.sql` resets it
