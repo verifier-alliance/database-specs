@@ -32,14 +32,16 @@
         "required": [
           "type",
           "reason",
-          "offset",
-          "id"
+          "offset"
         ],
         "additionalProperties": false,
         "properties": {
           "type": {
             "type": "string",
-            "value": "replace"
+            "enum": [
+              "replace",
+              "delete"
+            ]
           },
           "reason": {
             "type": "string",
@@ -54,6 +56,10 @@
           "id": {
             "type": "string",
             "minLength": 1
+          },
+          "length": {
+            "type": "number",
+            "minimum": 0
           }
         }
       },
