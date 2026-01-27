@@ -622,7 +622,20 @@ CREATE FUNCTION public.validate_transformation_key_length(object jsonb) RETURNS 
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    RETURN object ? 'length' AND is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer >= 0;
+    RETURN object ? 'length' AND is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer > 0;
+END;
+$$;
+
+--
+-- Name: validate_transformation_key_length_optional(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_transformation_key_length_optional(object jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN NOT object ? 'length'
+        OR (is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer >= 0);
 END;
 $$;
 
@@ -707,6 +720,7 @@ BEGIN
     RETURN (
         validate_transformation_key_type(object, 'replace')
         AND validate_transformation_key_offset(object)
+        AND validate_transformation_key_length_optional(object)
         AND validate_transformation_key_id(object)
     ) OR (
         validate_transformation_key_type(object, 'delete')

@@ -26,7 +26,7 @@ Apart from the specifications in each section below, the following rules apply t
 
 - All hexadecimal value strings must be prefixed with `0x` such as addresses, constructor arguments etc.
 - `offset` values correspond to bytes in the bytecode and not string indexes. So `offset: 1` for the bytecode "0xab46fd" is the first byte in the bytecode corresponds to start from `46`
-- `length` values (for delete transformations) are in bytes.
+- `length` values (for delete transformations) are in number of bytes.
 
 ## Transformations
 
@@ -83,7 +83,7 @@ This object contains the transformation that will be applied to the creation byt
 The creation transformation can only contain these as `"reason"`s and `"type"`s:
 
 - `{ "reason": "constructorArguments", "type": "insert", "offset": 999 }`
-- `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
+- `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories. Can also include optional `"length"`, if included it must be used instead of the length of the auxdata in the transformations.
 - `{ "reason": "cborAuxdata", "type": "delete", "offset": 123, "length": 45 }`
 - `{ "reason": "library", "type": "replace", "offset": 123, id: "sources/lib/MyLib.sol:MyLib" }`
 
