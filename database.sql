@@ -635,7 +635,7 @@ CREATE FUNCTION public.validate_transformation_key_length_optional(object jsonb)
     AS $$
 BEGIN
     RETURN NOT object ? 'length'
-        OR (is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer >= 0);
+        OR (is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer > 0);
 END;
 $$;
 

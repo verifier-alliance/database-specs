@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION validate_transformation_key_length_optional(object js
 $$
 BEGIN
     RETURN NOT object ? 'length'
-        OR (is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer >= 0);
+        OR (is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer > 0);
 END;
 $$ LANGUAGE plpgsql;
 
