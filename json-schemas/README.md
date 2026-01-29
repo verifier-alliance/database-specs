@@ -141,7 +141,7 @@ Similar to `creation_transformation`. But runtime code does not contain construc
 
 The runtime transformations can only contain these as `"reason"`s and `"type"`s:
 
-- `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
+- `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories. Can also include optional `"length"`, if included it must be used instead of the length of the auxdata in the transformations.
 - `{ "reason": "cborAuxdata", "type": "delete", "offset": 123, "length": 45 }`
 - `{ "reason": "library", "type": "replace", "offset": 123, id: "contracts/order/OrderUtils.sol:OrderUtilsLib" }`
 - `{ "reason": "immutable", "type": "replace", "offset": 999, id: "2473" }` Needs an `id` for referencing multiple times and there can be multiple immutable transformations. Solidity contracts have `"replace"` type, while Vyper ones have `"insert"` because they are appended to the runtime bytecode.
@@ -229,7 +229,14 @@ Compiler settings as passed to the compiler in JSON format
   },
   "outputSelection": {
     "*": {
-      "*": ["evm.bytecode", "evm.deployedBytecode", "devdoc", "userdoc", "metadata", "abi"]
+      "*": [
+        "evm.bytecode",
+        "evm.deployedBytecode",
+        "devdoc",
+        "userdoc",
+        "metadata",
+        "abi"
+      ]
     },
     "contracts/order/OrderUtils.sol": {
       "OrderUtils": ["*"]
