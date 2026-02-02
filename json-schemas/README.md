@@ -84,7 +84,7 @@ The creation transformation can only contain these as `"reason"`s and `"type"`s:
 
 - `{ "reason": "constructorArguments", "type": "insert", "offset": 999 }`
 - `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories. Can also include optional `"length"`, if included it must be used instead of the length of the auxdata in the transformations.
-- `{ "reason": "cborAuxdata", "type": "delete", "offset": 123, "length": 45 }`
+- `{ "reason": "cborAuxdata", "type": "delete", "offset": 123, "length": 45 }` Can also have `"type": "delete"` which means the onchain bytecode does not have the cborAuxdata while the recompiled bytecode has it.
 - `{ "reason": "library", "type": "replace", "offset": 123, id: "sources/lib/MyLib.sol:MyLib" }`
 
 Example:
@@ -142,7 +142,7 @@ Similar to `creation_transformation`. But runtime code does not contain construc
 The runtime transformations can only contain these as `"reason"`s and `"type"`s:
 
 - `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories. Can also include optional `"length"`, if included it must be used instead of the length of the auxdata in the transformations.
-- `{ "reason": "cborAuxdata", "type": "delete", "offset": 123, "length": 45 }`
+- `{ "reason": "cborAuxdata", "type": "delete", "offset": 123, "length": 45 }` Can also have `"type": "delete"` which means the onchain bytecode does not have the cborAuxdata while the recompiled bytecode has it.
 - `{ "reason": "library", "type": "replace", "offset": 123, id: "contracts/order/OrderUtils.sol:OrderUtilsLib" }`
 - `{ "reason": "immutable", "type": "replace", "offset": 999, id: "2473" }` Needs an `id` for referencing multiple times and there can be multiple immutable transformations. Solidity contracts have `"replace"` type, while Vyper ones have `"insert"` because they are appended to the runtime bytecode.
 - `{ "reason": "callProtection", "type": "replace", "offset": 1 }`
