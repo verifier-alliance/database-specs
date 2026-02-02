@@ -615,6 +615,32 @@ $$;
 
 
 --
+-- Name: validate_transformation_key_length(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_transformation_key_length(object jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN object ? 'length' AND is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer > 0;
+END;
+$$;
+
+--
+-- Name: validate_transformation_key_length_optional(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_transformation_key_length_optional(object jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN NOT object ? 'length'
+        OR (is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer > 0);
+END;
+$$;
+
+
+--
 -- Name: validate_transformation_key_type(jsonb, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -691,8 +717,16 @@ CREATE FUNCTION public.validate_transformations_cbor_auxdata(object jsonb) RETUR
     LANGUAGE plpgsql
     AS $$
 BEGIN
-    RETURN validate_transformation_key_type(object, 'replace') AND validate_transformation_key_offset(object)
-        AND validate_transformation_key_id(object);
+    RETURN (
+        validate_transformation_key_type(object, 'replace')
+        AND validate_transformation_key_offset(object)
+        AND validate_transformation_key_length_optional(object)
+        AND validate_transformation_key_id(object)
+    ) OR (
+        validate_transformation_key_type(object, 'delete')
+        AND validate_transformation_key_offset(object)
+        AND validate_transformation_key_length(object)
+    );
 END;
 $$;
 

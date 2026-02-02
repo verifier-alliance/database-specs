@@ -26,6 +26,7 @@ Apart from the specifications in each section below, the following rules apply t
 
 - All hexadecimal value strings must be prefixed with `0x` such as addresses, constructor arguments etc.
 - `offset` values correspond to bytes in the bytecode and not string indexes. So `offset: 1` for the bytecode "0xab46fd" is the first byte in the bytecode corresponds to start from `46`
+- `length` values (for delete transformations) are in number of bytes.
 
 ## Transformations
 
@@ -82,7 +83,8 @@ This object contains the transformation that will be applied to the creation byt
 The creation transformation can only contain these as `"reason"`s and `"type"`s:
 
 - `{ "reason": "constructorArguments", "type": "insert", "offset": 999 }`
-- `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
+- `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories. Can also include optional `"length"`, if included it must be used instead of the length of the auxdata in the transformations.
+- `{ "reason": "cborAuxdata", "type": "delete", "offset": 123, "length": 45 }` Can also have `"type": "delete"` which means the onchain bytecode does not have the cborAuxdata while the recompiled bytecode has it.
 - `{ "reason": "library", "type": "replace", "offset": 123, id: "sources/lib/MyLib.sol:MyLib" }`
 
 Example:
@@ -99,6 +101,12 @@ Example:
     "id": "0",
     "type": "replace",
     "offset": 1269,
+    "reason": "cborAuxdata"
+  },
+  {
+    "type": "delete",
+    "offset": 1295,
+    "length": 47,
     "reason": "cborAuxdata"
   },
   {
@@ -133,7 +141,8 @@ Similar to `creation_transformation`. But runtime code does not contain construc
 
 The runtime transformations can only contain these as `"reason"`s and `"type"`s:
 
-- `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories.
+- `{ "reason": "cborAuxdata", "type": "replace", "offset": 123, id: "0" }` Needs an `id` since there can be multiple auxdata transformations e.g. factories. Can also include optional `"length"`, if included it must be used instead of the length of the auxdata in the transformations.
+- `{ "reason": "cborAuxdata", "type": "delete", "offset": 123, "length": 45 }` Can also have `"type": "delete"` which means the onchain bytecode does not have the cborAuxdata while the recompiled bytecode has it.
 - `{ "reason": "library", "type": "replace", "offset": 123, id: "contracts/order/OrderUtils.sol:OrderUtilsLib" }`
 - `{ "reason": "immutable", "type": "replace", "offset": 999, id: "2473" }` Needs an `id` for referencing multiple times and there can be multiple immutable transformations. Solidity contracts have `"replace"` type, while Vyper ones have `"insert"` because they are appended to the runtime bytecode.
 - `{ "reason": "callProtection", "type": "replace", "offset": 1 }`
@@ -220,7 +229,14 @@ Compiler settings as passed to the compiler in JSON format
   },
   "outputSelection": {
     "*": {
-      "*": ["evm.bytecode", "evm.deployedBytecode", "devdoc", "userdoc", "metadata", "abi"]
+      "*": [
+        "evm.bytecode",
+        "evm.deployedBytecode",
+        "devdoc",
+        "userdoc",
+        "metadata",
+        "abi"
+      ]
     },
     "contracts/order/OrderUtils.sol": {
       "OrderUtils": ["*"]

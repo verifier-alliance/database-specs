@@ -23,6 +23,7 @@ class TestCommon:
                 "offset": 0, "id": "file1:lib1"},
             {"reason": "immutable", "type": "replace", "offset": 0, "id": "0"},
             {"reason": "cborAuxdata", "type": "replace", "offset": 0, "id": "0"},
+            {"reason": "cborAuxdata", "type": "delete", "offset": 1, "length": 2},
             {"reason": "callProtection", "type": "replace", "offset": 0}
         ]
         dummy_verified_contract.insert(
@@ -287,6 +288,20 @@ class TestCborAuxdata:
         dummy_verified_contract.insert(
             connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
 
+    def test_valid_value_with_length(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_transformations = [
+            {"reason": "cborAuxdata", "type": "replace", "offset": 0, "id": "0", "length": 12}
+        ]
+        dummy_verified_contract.insert(
+            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
+
+    def test_valid_value_delete(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_transformations = [
+            {"reason": "cborAuxdata", "type": "delete", "offset": 0, "length": 12}
+        ]
+        dummy_verified_contract.insert(
+            connection, dummy_contract_deployment.id, dummy_compiled_contract.id)
+
     def test_missing_key_type_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
         dummy_verified_contract.runtime_transformations = [
             {"reason": "cborAuxdata", "offset": 0, "id": "0"}
@@ -339,6 +354,45 @@ class TestCborAuxdata:
         # The offset must be >= 0
         dummy_verified_contract.runtime_transformations = [
             {"reason": "cborAuxdata", "type": "replace", "offset": -1, "id": "0"}
+        ]
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_transformations_json_schema")
+
+    def test_missing_key_length_for_delete_fails(self, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_transformations = [
+            {"reason": "cborAuxdata", "type": "delete", "offset": 0}
+        ]
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_transformations_json_schema")
+
+    @pytest.mark.parametrize("value", [None, "", [], dict()], ids=["null", "string", "array", "object"])
+    def test_invalid_key_length_type_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_transformations = [
+            {"reason": "cborAuxdata", "type": "replace", "offset": 0, "id": "0", "length": value}
+        ]
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_transformations_json_schema")
+
+    @pytest.mark.parametrize("value", [None, "", [], dict()], ids=["null", "string", "array", "object"])
+    def test_invalid_key_length_type_for_delete_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_transformations = [
+            {"reason": "cborAuxdata", "type": "delete", "offset": 0, "length": value}
+        ]
+        check_constraint_fails(
+            lambda: dummy_verified_contract.insert(
+                connection, dummy_contract_deployment.id, dummy_compiled_contract.id),
+            "runtime_transformations_json_schema")
+
+    @pytest.mark.parametrize("value", [0, -1], ids=["zero", "negative"])
+    def test_invalid_key_length_value_fails(self, value, connection, dummy_code, dummy_contract, dummy_contract_deployment, dummy_compiled_contract, dummy_verified_contract):
+        dummy_verified_contract.runtime_transformations = [
+            {"reason": "cborAuxdata", "type": "delete", "offset": 0, "length": value}
         ]
         check_constraint_fails(
             lambda: dummy_verified_contract.insert(
