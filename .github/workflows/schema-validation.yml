@@ -44,7 +44,7 @@ jobs:
       - name: Validate schema is in sync with migrations
         run: |
           # Apply migrations
-          dbmate up
+          DBMATE_SCHEMA_FILE=ci-dump.sql dbmate up
 
           # Force dump in case problems were ignored
           DBMATE_SCHEMA_FILE=ci-dump.sql dbmate dump
