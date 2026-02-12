@@ -1,4 +1,4 @@
-\restrict ofpmBZgaMbuYf558teg7MYcyPbiwJkZyYgREoiBTduRUlCZa72Go911eC5LHqgI
+\restrict AsCPTOt3U9KhJ9fUdZGWUtrBsH1prEN0qQZE48Juv4M8WNoa7mPKZojrPqmzFhv
 
 -- Dumped from database version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
 -- Dumped by pg_dump version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
@@ -602,19 +602,6 @@ $$;
 
 
 --
--- Name: validate_transformation_key_offset(jsonb); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.validate_transformation_key_offset(object jsonb) RETURNS boolean
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    RETURN object ? 'offset' AND is_jsonb_number(object -> 'offset') AND (object ->> 'offset')::integer >= 0;
-END;
-$$;
-
-
---
 -- Name: validate_transformation_key_length(jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -626,6 +613,7 @@ BEGIN
 END;
 $$;
 
+
 --
 -- Name: validate_transformation_key_length_optional(jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
@@ -636,6 +624,19 @@ CREATE FUNCTION public.validate_transformation_key_length_optional(object jsonb)
 BEGIN
     RETURN NOT object ? 'length'
         OR (is_jsonb_number(object -> 'length') AND (object ->> 'length')::integer > 0);
+END;
+$$;
+
+
+--
+-- Name: validate_transformation_key_offset(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_transformation_key_offset(object jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN object ? 'offset' AND is_jsonb_number(object -> 'offset') AND (object ->> 'offset')::integer >= 0;
 END;
 $$;
 
@@ -1730,7 +1731,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ofpmBZgaMbuYf558teg7MYcyPbiwJkZyYgREoiBTduRUlCZa72Go911eC5LHqgI
+\unrestrict AsCPTOt3U9KhJ9fUdZGWUtrBsH1prEN0qQZE48Juv4M8WNoa7mPKZojrPqmzFhv
 
 
 --
@@ -1741,4 +1742,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250717103432'),
     ('20250723145429'),
     ('20251023134207'),
-    ('20251106144315');
+    ('20251106144315'),
+    ('20260126113330');
