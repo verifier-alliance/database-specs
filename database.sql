@@ -1,7 +1,7 @@
-\restrict AsCPTOt3U9KhJ9fUdZGWUtrBsH1prEN0qQZE48Juv4M8WNoa7mPKZojrPqmzFhv
+\restrict rqFMSSTdh1xleP8vBtgWGfqkxcysKZzmCexIY6QPwSGZXxsDCrIV0BfKUvaEefZ
 
--- Dumped from database version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
--- Dumped by pg_dump version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
+-- Dumped from database version 16.12 (Ubuntu 16.12-1.pgdg24.04+1)
+-- Dumped by pg_dump version 16.12 (Ubuntu 16.12-1.pgdg24.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -381,8 +381,8 @@ BEGIN
         is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj,
-            array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
-            array []::text[]
+            array ['abi', 'sources'],
+            array ['userdoc', 'devdoc', 'storageLayout']
         ) AND
         validate_compilation_artifacts_abi(obj -> 'abi') AND
         validate_compilation_artifacts_sources(obj -> 'sources');
@@ -1731,7 +1731,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict AsCPTOt3U9KhJ9fUdZGWUtrBsH1prEN0qQZE48Juv4M8WNoa7mPKZojrPqmzFhv
+\unrestrict rqFMSSTdh1xleP8vBtgWGfqkxcysKZzmCexIY6QPwSGZXxsDCrIV0BfKUvaEefZ
 
 
 --
@@ -1743,4 +1743,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250723145429'),
     ('20251023134207'),
     ('20251106144315'),
-    ('20260126113330');
+    ('20260126113330'),
+    ('20260224135405');
