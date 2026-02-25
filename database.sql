@@ -1,4 +1,4 @@
-\restrict pbViNAGNy06IgsZrLYssEf8nHcmLjNQjeTBkhkhp0rHRqbCQObLRIy7P0MxiETv
+\restrict 7mZpScgT6ftGUlRA0ATHWmg8xgbioRvZDlJHy9RkZPwcyJEcQw9LTLQE0Lu8V3h
 
 -- Dumped from database version 16.12 (Ubuntu 16.12-1.pgdg24.04+1)
 -- Dumped by pg_dump version 16.12 (Ubuntu 16.12-1.pgdg24.04+1)
@@ -191,6 +191,26 @@ CREATE FUNCTION public.trigger_set_updated_by() RETURNS trigger
 BEGIN
     NEW.updated_by = current_user;
     RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: validate_additional_input(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_additional_input(obj jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN obj IS NULL OR (
+        is_jsonb_object(obj) AND
+        validate_json_object_keys(
+            obj,
+            array []::text[],
+            array ['storage_layout_overrides']
+        )
+    );
 END;
 $$;
 
@@ -933,6 +953,8 @@ CREATE TABLE public.compiled_contracts (
     creation_code_artifacts jsonb NOT NULL,
     runtime_code_hash bytea NOT NULL,
     runtime_code_artifacts jsonb NOT NULL,
+    additional_input jsonb,
+    CONSTRAINT additional_input_json_schema CHECK (public.validate_additional_input(additional_input)),
     CONSTRAINT compilation_artifacts_json_schema CHECK (public.validate_compilation_artifacts(compilation_artifacts)),
     CONSTRAINT creation_code_artifacts_json_schema CHECK (public.validate_creation_code_artifacts(creation_code_artifacts)),
     CONSTRAINT runtime_code_artifacts_json_schema CHECK (public.validate_runtime_code_artifacts(runtime_code_artifacts))
@@ -1731,7 +1753,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict pbViNAGNy06IgsZrLYssEf8nHcmLjNQjeTBkhkhp0rHRqbCQObLRIy7P0MxiETv
+\unrestrict 7mZpScgT6ftGUlRA0ATHWmg8xgbioRvZDlJHy9RkZPwcyJEcQw9LTLQE0Lu8V3h
 
 
 --
@@ -1745,4 +1767,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20251106144315'),
     ('20260126113330'),
     ('20260224135405'),
-    ('20260224171441');
+    ('20260224171441'),
+    ('20260225083159');
