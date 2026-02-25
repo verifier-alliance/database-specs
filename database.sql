@@ -1,4 +1,4 @@
-\restrict rqFMSSTdh1xleP8vBtgWGfqkxcysKZzmCexIY6QPwSGZXxsDCrIV0BfKUvaEefZ
+\restrict pbViNAGNy06IgsZrLYssEf8nHcmLjNQjeTBkhkhp0rHRqbCQObLRIy7P0MxiETv
 
 -- Dumped from database version 16.12 (Ubuntu 16.12-1.pgdg24.04+1)
 -- Dumped by pg_dump version 16.12 (Ubuntu 16.12-1.pgdg24.04+1)
@@ -382,7 +382,7 @@ BEGIN
         validate_json_object_keys(
             obj,
             array ['abi', 'sources'],
-            array ['userdoc', 'devdoc', 'storageLayout']
+            array ['userdoc', 'devdoc', 'storageLayout', 'transientStorageLayout']
         ) AND
         validate_compilation_artifacts_abi(obj -> 'abi') AND
         validate_compilation_artifacts_sources(obj -> 'sources');
@@ -1731,7 +1731,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict rqFMSSTdh1xleP8vBtgWGfqkxcysKZzmCexIY6QPwSGZXxsDCrIV0BfKUvaEefZ
+\unrestrict pbViNAGNy06IgsZrLYssEf8nHcmLjNQjeTBkhkhp0rHRqbCQObLRIy7P0MxiETv
 
 
 --
@@ -1744,4 +1744,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20251023134207'),
     ('20251106144315'),
     ('20260126113330'),
-    ('20260224135405');
+    ('20260224135405'),
+    ('20260224171441');
