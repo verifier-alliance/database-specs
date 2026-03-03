@@ -101,6 +101,7 @@ class CompiledContract:
     compilation_artifacts = dict()
     creation_code_artifacts = dict()
     runtime_code_artifacts = dict()
+    additional_input = Null
 
     @staticmethod
     def dummy():
@@ -128,17 +129,24 @@ class CompiledContract:
         return instance
 
     def insert(self, connection, creation_code_hash, runtime_code_hash):
+        query_columns = ("id, compiler, version, language, name, fully_qualified_name, "
+                         "compiler_settings, compilation_artifacts, creation_code_hash, creation_code_artifacts, "
+                         "runtime_code_hash, runtime_code_artifacts")
+        values = [self.id, self.compiler, self.version, self.language, self.name, self.fully_qualified_name,
+                  json.dumps(self.compiler_settings), json.dumps(self.compilation_artifacts),
+                  creation_code_hash, json.dumps(self.creation_code_artifacts),
+                  runtime_code_hash, json.dumps(self.runtime_code_artifacts)]
+
+        if self.additional_input != Null:
+            query_columns += ", additional_input"
+            values.append(json.dumps(self.additional_input))
+
+        query_values = ", ".join(["%s"] * len(values))
         with connection.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO compiled_contracts (
-                    id, compiler, version, language, name, fully_qualified_name, 
-                    compiler_settings, compilation_artifacts, creation_code_hash, creation_code_artifacts,
-                    runtime_code_hash, runtime_code_artifacts)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (self.id, self.compiler, self.version, self.language, self.name, self.fully_qualified_name,
-                  json.dumps(self.compiler_settings), json.dumps(
-                      self.compilation_artifacts), creation_code_hash, json.dumps(self.creation_code_artifacts),
-                  runtime_code_hash, json.dumps(self.runtime_code_artifacts)))
+            cursor.execute(f"""
+                INSERT INTO compiled_contracts ({query_columns})
+                VALUES ({query_values})
+            """, values)
 
 
 class VerifiedContract:

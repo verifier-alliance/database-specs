@@ -1,7 +1,7 @@
-\restrict AsCPTOt3U9KhJ9fUdZGWUtrBsH1prEN0qQZE48Juv4M8WNoa7mPKZojrPqmzFhv
+\restrict 7mZpScgT6ftGUlRA0ATHWmg8xgbioRvZDlJHy9RkZPwcyJEcQw9LTLQE0Lu8V3h
 
--- Dumped from database version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
--- Dumped by pg_dump version 16.11 (Ubuntu 16.11-1.pgdg24.04+1)
+-- Dumped from database version 16.12 (Ubuntu 16.12-1.pgdg24.04+1)
+-- Dumped by pg_dump version 16.12 (Ubuntu 16.12-1.pgdg24.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -196,6 +196,26 @@ $$;
 
 
 --
+-- Name: validate_additional_input(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.validate_additional_input(obj jsonb) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    RETURN obj IS NULL OR (
+        is_jsonb_object(obj) AND
+        validate_json_object_keys(
+            obj,
+            array []::text[],
+            array ['storage_layout_overrides']
+        )
+    );
+END;
+$$;
+
+
+--
 -- Name: validate_code_artifacts_cbor_auxdata(jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -381,8 +401,8 @@ BEGIN
         is_jsonb_object(obj) AND
         validate_json_object_keys(
             obj,
-            array ['abi', 'userdoc', 'devdoc', 'sources', 'storageLayout'],
-            array []::text[]
+            array ['abi', 'sources'],
+            array ['userdoc', 'devdoc', 'storageLayout', 'transientStorageLayout']
         ) AND
         validate_compilation_artifacts_abi(obj -> 'abi') AND
         validate_compilation_artifacts_sources(obj -> 'sources');
@@ -933,6 +953,8 @@ CREATE TABLE public.compiled_contracts (
     creation_code_artifacts jsonb NOT NULL,
     runtime_code_hash bytea NOT NULL,
     runtime_code_artifacts jsonb NOT NULL,
+    additional_input jsonb,
+    CONSTRAINT additional_input_json_schema CHECK (public.validate_additional_input(additional_input)),
     CONSTRAINT compilation_artifacts_json_schema CHECK (public.validate_compilation_artifacts(compilation_artifacts)),
     CONSTRAINT creation_code_artifacts_json_schema CHECK (public.validate_creation_code_artifacts(creation_code_artifacts)),
     CONSTRAINT runtime_code_artifacts_json_schema CHECK (public.validate_runtime_code_artifacts(runtime_code_artifacts))
@@ -1731,7 +1753,7 @@ ALTER TABLE ONLY public.verified_contracts
 -- PostgreSQL database dump complete
 --
 
-\unrestrict AsCPTOt3U9KhJ9fUdZGWUtrBsH1prEN0qQZE48Juv4M8WNoa7mPKZojrPqmzFhv
+\unrestrict 7mZpScgT6ftGUlRA0ATHWmg8xgbioRvZDlJHy9RkZPwcyJEcQw9LTLQE0Lu8V3h
 
 
 --
@@ -1743,4 +1765,7 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250723145429'),
     ('20251023134207'),
     ('20251106144315'),
-    ('20260126113330');
+    ('20260126113330'),
+    ('20260224135405'),
+    ('20260224171441'),
+    ('20260225083159');

@@ -59,23 +59,24 @@ class TestObject:
         check_constraint_fails(
             lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
 
-    def test_missing_userdoc_fails(self, connection, dummy_code, dummy_compiled_contract):
+    def test_missing_userdoc_succeeds(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts.pop("userdoc")
-        check_constraint_fails(
-            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
+        dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash)
 
-    def test_missing_devdoc_fails(self, connection, dummy_code, dummy_compiled_contract):
+    def test_missing_devdoc_succeeds(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts.pop("devdoc")
-        check_constraint_fails(
-            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
+        dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash)
+
+    def test_missing_storage_layout_succeeds(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.compilation_artifacts.pop("storageLayout")
+        dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash)
+
+    def test_only_mandatory_fields_succeeds(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.compilation_artifacts = {"abi": None, "sources": None}
+        dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash)
 
     def test_missing_sources_fails(self, connection, dummy_code, dummy_compiled_contract):
         dummy_compiled_contract.compilation_artifacts.pop("sources")
-        check_constraint_fails(
-            lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
-
-    def test_missing_storage_layout_fails(self, connection, dummy_code, dummy_compiled_contract):
-        dummy_compiled_contract.compilation_artifacts.pop("storageLayout")
         check_constraint_fails(
             lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
 
@@ -83,6 +84,18 @@ class TestObject:
         dummy_compiled_contract.compilation_artifacts['unknown_key'] = None
         check_constraint_fails(
             lambda: dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash), 'compilation_artifacts_json_schema')
+
+
+class TestTransientStorageLayout:
+    # transientStorageLayout was added as an optional field by the add_transientStorageLayout migration
+
+    def test_with_transient_storage_layout_as_none_succeeds(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.compilation_artifacts["transientStorageLayout"] = None
+        dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash)
+
+    def test_with_transient_storage_layout_as_object_succeeds(self, connection, dummy_code, dummy_compiled_contract):
+        dummy_compiled_contract.compilation_artifacts["transientStorageLayout"] = {"MyVar": {"slot": "0x0", "type": "uint256"}}
+        dummy_compiled_contract.insert(connection, dummy_code.code_hash, dummy_code.code_hash)
 
 
 class TestAbi:
