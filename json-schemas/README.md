@@ -255,7 +255,8 @@ This object MUST contain the following fields. If a field is not output or avail
 - `userdoc`
 - `devdoc`
 - `sources` - The AST identifiers of sources
-- `storageLayout` - Only available after a certain Solidity version. If N/A set to `null`.
+- `storageLayout` - Only available from Solidity version >= 0.5.13. If N/A set to `null`.
+- `transientStorageLayout` - Only available from Solidity version >= 0.8.27. If N/A set to `null`.
 
 ```json
 {
@@ -270,7 +271,8 @@ This object MUST contain the following fields. If a field is not output or avail
       "id": 1
     }
   },
-  "storageLayout": {...}
+  "storageLayout": {...},
+  "transientStorageLayout": {...}
 }
 ```
 
