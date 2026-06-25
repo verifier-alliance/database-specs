@@ -166,7 +166,11 @@ CREATE TABLE compiled_contracts
         the syntax ('solidity', 'vyper', 'yul'). there may be future compilers which aren't solc
         but can still compile solidity, which is why we need to differentiate the two
 
-        the version should uniquely identify the compiler
+        the version should uniquely identify the compiler. for single-binary compilers this is
+        the plain compiler version (e.g. solc '0.8.26+commit.8a97fa7a', vyper 'v0.3.10'). for
+        toolchains built from multiple binaries it may be a composite string that identifies the
+        whole toolchain — e.g. zksync's zksolc drives a separate solc backend, and is recorded as
+        'zksolc:<zksolcVersion>;solc:<solcVersion>' (e.g. 'zksolc:1.5.10;solc:0.8.26-1.0.2')
     */
     compiler    VARCHAR NOT NULL,
     version     VARCHAR NOT NULL,
